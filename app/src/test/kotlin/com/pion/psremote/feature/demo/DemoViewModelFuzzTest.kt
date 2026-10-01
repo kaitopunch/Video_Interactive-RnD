@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.pion.psremote.core.common.AppResult
 import com.pion.psremote.domain.model.ControllerButton
 import com.pion.psremote.domain.playback.PlaybackEvent
+import com.pion.psremote.domain.score.ScoreTier
 import com.pion.psremote.domain.usecase.LoadDemoUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -47,6 +48,7 @@ class DemoViewModelFuzzTest : DemoViewModelTestFixture() {
                 val label = act(random, world)
                 runCurrent()
                 assertInvariants("round $round, action $action ($label)", world)
+                assertScoreMoved("round $round, action $action ($label)", before, label)
                 seen.record(before, state)
             }
             // Quiet for longer than the ramp and the countdown: whatever was in flight has landed.
@@ -72,8 +74,16 @@ class DemoViewModelFuzzTest : DemoViewModelTestFixture() {
         var countdowns = 0
         var finished = 0
         var failed = 0
+        var perfect = 0
+        var good = 0
 
         fun record(before: DemoState, after: DemoState) {
+            if (after.score.awards.size > before.score.awards.size) {
+                when (after.score.awards.last()) {
+                    ScoreTier.PERFECT -> perfect++
+                    ScoreTier.GOOD -> good++
+                }
+            }
             if (before.tutorial == null && after.tutorial != null) tutorialsShown++
             if (before.tutorial != null && after.tutorial == null && after.phase == DemoPhase.Playing) stepsCompleted++
             if (before.tutorial?.isWaiting == false && after.tutorial?.isWaiting == true) stopsReached++
@@ -82,11 +92,11 @@ class DemoViewModelFuzzTest : DemoViewModelTestFixture() {
             if (before.phase !is DemoPhase.Failed && after.phase is DemoPhase.Failed) failed++
         }
 
-        fun isThorough() = listOf(tutorialsShown, stepsCompleted, stopsReached, countdowns, finished, failed)
+        fun isThorough() = listOf(tutorialsShown, stepsCompleted, stopsReached, countdowns, finished, failed, perfect, good)
             .all { it >= MIN_OCCURRENCES }
 
         override fun toString() = "tutorials=$tutorialsShown completed=$stepsCompleted stops=$stopsReached " +
-            "countdowns=$countdowns finished=$finished failed=$failed"
+            "countdowns=$countdowns finished=$finished failed=$failed perfect=$perfect good=$good"
     }
 
     /** What the test knows that the ViewModel does not expose. */
@@ -145,14 +155,15 @@ class DemoViewModelFuzzTest : DemoViewModelTestFixture() {
     }
 
     /**
-     * Half the time a button that makes progress, so steps do get completed; then one the step names, in or out
-     * of turn; then any button at all.
+     * Three times in four a button that makes progress, so steps do get completed, some before their stop cue (at one
+     * in two, PERFECT was rare enough to sit at the coverage floor); then one the step names, in or out of turn; then
+     * any button at all.
      */
     private fun randomButton(random: Random): ControllerButton {
         val tutorial = state.tutorial
         val pool = when {
             tutorial == null -> ControllerButton.entries
-            random.nextBoolean() -> tutorial.progress.activeButtons.toList()
+            random.nextInt(4) != 0 -> tutorial.progress.activeButtons.toList()
             random.nextBoolean() -> tutorial.step.targets
             else -> ControllerButton.entries
         }.ifEmpty { ControllerButton.entries }
@@ -179,6 +190,32 @@ class DemoViewModelFuzzTest : DemoViewModelTestFixture() {
         if (s.phase is DemoPhase.Finished || s.phase is DemoPhase.Failed || s.phase is DemoPhase.InvalidScript) {
             assertEquals("$where: a cue outlived the run", null, playback.pendingCueMs)
             assertEquals("$where: a countdown outlived the run", null, s.resumeCountdown)
+        }
+        // Stronger than points ≤ maxPoints, which two GOODs on a one-step script would pass.
+        assertTrue("$where: ${s.score.awards} for ${s.score.stepCount} steps", s.score.awards.size <= s.score.stepCount)
+    }
+
+    /**
+     * Scoring rules R1, R2, R5, R7: only a press that closes a tutorial scores, one step at a time and at that step's
+     * tier; a score never loses an award it had, and only a Replay starts it again from zero. `Ended` arrives here at any moment, as from a broken video, so a finished
+     * run is not checked for a full set of awards: only the real player guarantees that (rules R9).
+     */
+    private fun assertScoreMoved(where: String, before: DemoState, label: String) {
+        val earlier = before.score.awards
+        val now = state.score.awards
+        when {
+            now.size < earlier.size ->
+                assertTrue("$where: the score went from $earlier to $now", label == "Replay" && now.isEmpty())
+            now.size > earlier.size -> {
+                val tutorial = before.tutorial
+                assertEquals("$where: more than one step scored at once", earlier.size + 1, now.size)
+                assertEquals("$where: an earlier award changed", earlier, now.dropLast(1))
+                // A press, not Ended or Failed: those clear the tutorial too.
+                assertTrue("$where: scored by something other than a press", label.startsWith("press"))
+                assertTrue("$where: scored without a tutorial completing", tutorial != null && state.tutorial == null)
+                assertEquals("$where: the wrong tier", ScoreTier.of(tutorial!!.step, tutorial.isWaiting), now.last())
+            }
+            else -> assertEquals("$where: an award changed", earlier, now)
         }
     }
 
@@ -207,7 +244,21 @@ class DemoViewModelFuzzTest : DemoViewModelTestFixture() {
              "playbackSpeed":0.1,"slowDurationMs":1000}
         ]"""
 
-        val SCRIPTS = listOf(SCRIPT, SIMULTANEOUS_SCRIPT, ANY_ORDER_SCRIPT)
+        /**
+         * One button, slowed: the commonest step in a real script, and the one a user most often finishes before the
+         * stop. Without it every step here needs two or three presses, the stop cue nearly always lands first, and
+         * PERFECT was reached 10 times in 18 000 actions.
+         */
+        const val ONE_BUTTON_SCRIPT = """[
+            {"step_sequence":1,"triggerTimeMs":1000,"targetButtonIds":["CROSS"],
+             "playbackSpeed":0.25,"slowDurationMs":4000},
+            {"step_sequence":2,"triggerTimeMs":3000,"targetButtonIds":["R1"],
+             "playbackSpeed":0.5,"slowDurationMs":2000},
+            {"step_sequence":3,"triggerTimeMs":5000,"targetButtonIds":["TRIANGLE"],
+             "playbackSpeed":0.25,"slowDurationMs":2000}
+        ]"""
+
+        val SCRIPTS = listOf(SCRIPT, SIMULTANEOUS_SCRIPT, ANY_ORDER_SCRIPT, ONE_BUTTON_SCRIPT)
 
         /** Positions a cue might report that the ViewModel is not waiting for. */
         val STALE_POSITIONS = listOf(0L, 1_000L, 34_000L, 34_750L, 60_000L, 69_999L)

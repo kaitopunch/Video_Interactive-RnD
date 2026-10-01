@@ -24,7 +24,8 @@ class ControllerGeometryTest(private val device: Device) {
 
     private val layout = ControllerGeometry.layout(device.width, device.height, device.insets)
     private val controls: Map<String, Rect> =
-        layout.buttons.mapKeys { it.key.name }.mapValues { it.value.bounds } + ("exit" to layout.exit.bounds)
+        layout.buttons.mapKeys { it.key.name }.mapValues { it.value.bounds } +
+            ("exit" to layout.exit.bounds) + ("score" to layout.score.bounds)
 
     private val safeLeft = device.insets.left
     private val safeTop = device.insets.top

@@ -1,10 +1,17 @@
 package com.pion.psremote.feature.demo
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -30,6 +37,8 @@ import com.pion.psremote.domain.model.ControllerButton.R2
 import com.pion.psremote.domain.model.InputMode
 import com.pion.psremote.domain.model.ScriptViolation
 import com.pion.psremote.domain.model.TutorialStep
+import com.pion.psremote.domain.score.Score
+import com.pion.psremote.domain.score.ScoreTier
 import com.pion.psremote.testing.boundsOf
 import com.pion.psremote.testing.centerOf
 import com.pion.psremote.testing.hasClickLabel
@@ -135,6 +144,68 @@ class DemoScreenTest {
         compose.onNode(hasClickLabel(string(R.string.action_exit))).performClick()
 
         assertEquals(emptyList<DemoIntent>(), intents)
+    }
+
+    /** Scoring rules §5: the tier of the last step stays beside the points until the next tutorial takes over. */
+    @Test
+    fun theScoreShowsTheLastTierUntilTheNextTutorialAppears() {
+        show(DemoState(phase = DemoPhase.Playing, score = Score(listOf(ScoreTier.PERFECT), stepCount = 2)))
+
+        compose.onNodeWithText("100").assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.score_tier_perfect)).assertIsDisplayed()
+
+        state = tutorial(InputMode.SEQUENCE, CROSS).copy(score = state.score)
+
+        compose.onNodeWithText("100").assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.score_label)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.score_tier_perfect)).assertDoesNotExist()
+    }
+
+    /**
+     * The score takes no touch: no click action, and a tap on it reaches the screen's parent unconsumed. No button lies
+     * under it, so an intent count could not tell a score that swallows touches from one that does not.
+     */
+    @Test
+    fun theScoreTakesNoTouch() {
+        val consumed = mutableListOf<Boolean>()
+        state = tutorial(InputMode.SEQUENCE, CROSS)
+        compose.setContent {
+            PsRemoteTheme {
+                // Main pass, so every node under the tap — the score included — has had each event first. Down and
+                // up both: a tap detector consumes at least the up.
+                Box(
+                    Modifier.pointerInput(Unit) {
+                        awaitEachGesture {
+                            do {
+                                val event = awaitPointerEvent()
+                                consumed += event.changes.any { it.isConsumed }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    },
+                ) {
+                    DemoScreen(state, onIntent = { intents += it }, video = {})
+                }
+            }
+        }
+        val score = compose.onNodeWithText(string(R.string.score_label))
+        score.assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+
+        compose.onRoot().performTouchInput { click(score.fetchSemanticsNode().boundsInRoot.center) }
+
+        assertEquals("the tap was consumed under the score", listOf(false, false), consumed)
+        assertEquals(emptyList<DemoIntent>(), intents)
+    }
+
+    @Test
+    fun theFinishedPanelShowsTheScoreOutOfTheMaximumInsteadOfTheCornerDisplay() {
+        show(DemoState(phase = DemoPhase.Finished, score = Score(listOf(ScoreTier.PERFECT, ScoreTier.GOOD), stepCount = 3)))
+
+        compose.onNodeWithText(string(R.string.finished_score, 150, 300)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.finished_tiers, 1, 1)).assertIsDisplayed()
+        // The corner display would read "GOOD" over "150" here, so all three are checked, not just its "SCORE".
+        compose.onNodeWithText("150").assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.score_tier_good)).assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.score_label)).assertDoesNotExist()
     }
 
     @Test
