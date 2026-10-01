@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PS Remote Demo</string>
+
+    <!-- Home: the game picker. -->
+    <string name="home_title">Choose a game</string>
+    <string name="home_subtitle">Play along with the gameplay video using the on-screen controller.</string>
+    <string name="home_loading">Loading games</string>
+    <string name="home_empty">No demo is bundled with this build. Add a folder under assets/demos/.</string>
+    <string name="home_failed">The list of games could not be read.</string>
+
+    <string name="loading">Loading demo</string>
+    <string name="action_exit">Exit</string>
+    <string name="action_replay">Replay</string>
+
+    <!-- A step's instruction is the lit buttons themselves; the only text is this, on an ANY_ORDER button pressed more than once. -->
+    <string name="badge_presses">×%1$d</string>
+
+    <string name="resume_title">Get ready</string>
+    <string name="resume_body">The demo continues when the countdown ends.</string>
+
+    <string name="finished_title">Demo complete</string>
+    <string name="finished_body">You have tried every control in this demo.</string>
+
+    <string name="error_script_title">This demo script cannot be played. Fix the following in script.json:</string>
+    <string name="error_failed_title">The demo cannot start</string>
+    <string name="error_file_missing">Demo file missing or unreadable: %1$s</string>
+    <string name="error_playback">The video could not be played (%1$s).</string>
+    <string name="error_unexpected">Something went wrong: %1$s</string>
+
+    <string name="field_type_integer">an integer</string>
+    <string name="field_type_number">a number</string>
+    <string name="field_type_string">a text value</string>
+    <string name="field_type_string_array">an array of button ids</string>
+
+    <!-- Structural problems: %1$d is the step's position in the file, counted from 1. -->
+    <string name="violation_not_json_array">The file is not a JSON array of steps.</string>
+    <string name="violation_step_not_object">Step #%1$d in the file is not a JSON object.</string>
+    <string name="violation_missing_field">Step #%1$d in the file: the field \"%2$s\" is missing.</string>
+    <string name="violation_wrong_type">Step #%1$d in the file: \"%2$s\" must be %3$s.</string>
+    <string name="violation_renamed_field">Step #%1$d in the file: \"%2$s\" has been renamed to \"%3$s\".</string>
+    <string name="violation_unknown_button">Step #%1$d in the file: there is no button with the id \"%2$s\".</string>
+    <string name="violation_unknown_input_mode">Step #%1$d in the file: inputMode \"%2$s\" must be SEQUENCE, SIMULTANEOUS or ANY_ORDER.</string>
+
+    <!-- Rule problems: %1$d is the step's step_sequence. -->
+    <string name="violation_sequence_below_one">Step %1$d: step_sequence starts at 1.</string>
+    <string name="violation_duplicate_sequence">step_sequence %1$d is used by more than one step.</string>
+    <string name="violation_negative_trigger">Step %1$d: triggerTimeMs (%2$d) must be 0 or more.</string>
+    <string name="violation_empty_targets">Step %1$d: targetButtonIds must list at least one button.</string>
+    <string name="violation_speed_range">Step %1$d: playbackSpeed (%2$s) must be 0 (stop at once), or from 0.1 to 1.</string>
+    <string name="violation_negative_slow_duration">Step %1$d: slowDurationMs (%2$d) must be 0 or more.</string>
+    <string name="violation_zero_speed_duration">Step %1$d: playbackSpeed 0 stops the video at once, so slowDurationMs must be 0, not %2$d.</string>
+    <string name="violation_too_many_simultaneous">Step %1$d: a SIMULTANEOUS step has %2$d buttons; the limit is %3$d.</string>
+    <string name="violation_repeated_simultaneous">Step %1$d: %2$s appears twice in a SIMULTANEOUS step. One button cannot be pressed twice at once.</string>
+    <string name="violation_trigger_before_previous_stop">Step %1$d: triggerTimeMs (%2$d) must be after the stop point of step %3$d (%4$d ms).</string>
+    <string name="violation_stop_after_video_end">Step %1$d: the stop point (%2$d ms) must be before the end of the video (%3$d ms).</string>
+</resources>

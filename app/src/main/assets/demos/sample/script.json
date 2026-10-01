@@ -1,0 +1,8 @@
+[
+  {"step_sequence": 1, "triggerTimeMs": 5000, "targetButtonIds": ["CROSS"], "playbackSpeed": 0.5, "slowDurationMs": 2000},
+  {"step_sequence": 2, "triggerTimeMs": 14000, "targetButtonIds": ["L1", "R1"], "inputMode": "SIMULTANEOUS", "playbackSpeed": 0.25, "slowDurationMs": 2000},
+  {"step_sequence": 3, "triggerTimeMs": 22000, "targetButtonIds": ["SQUARE", "TRIANGLE", "CIRCLE"], "inputMode": "ANY_ORDER", "playbackSpeed": 0.5, "slowDurationMs": 2000},
+  {"step_sequence": 4, "triggerTimeMs": 34000, "targetButtonIds": ["DPAD_UP", "CROSS", "R1"], "inputMode": "SEQUENCE", "playbackSpeed": 0.25, "slowDurationMs": 3000},
+  {"step_sequence": 5, "triggerTimeMs": 45000, "targetButtonIds": ["CROSS", "CROSS"], "playbackSpeed": 0.5, "slowDurationMs": 2000},
+  {"step_sequence": 6, "triggerTimeMs": 60000, "targetButtonIds": ["CROSS"], "playbackSpeed": 0, "slowDurationMs": 0}
+]

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A plain gamepad silhouette with the four face-button colours. Placeholder until design supplies one. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,40h36c9,0 15,6 16,14l2,14c1,6 -5,10 -10,6l-8,-7H36l-8,7c-5,4 -11,0 -10,-6l2,-14c1,-8 7,-14 16,-14z" />
+    <path
+        android:fillColor="#16181D"
+        android:pathData="M36,48h4v4h4v4h-4v4h-4v-4h-4v-4h4z" />
+    <path android:fillColor="#3DDBB0" android:pathData="M70,47m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
+    <path android:fillColor="#FF6B6B" android:pathData="M75,52m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
+    <path android:fillColor="#7FA8FF" android:pathData="M70,57m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
+    <path android:fillColor="#F28AD8" android:pathData="M65,52m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
+</vector>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PS Remote Demo</string>
+
+    <string name="home_title">Chọn game</string>
+    <string name="home_subtitle">Điều khiển theo video gameplay bằng tay cầm trên màn hình.</string>
+    <string name="home_loading">Đang tải danh sách game</string>
+    <string name="home_empty">Bản build này chưa có demo nào. Thêm một thư mục vào assets/demos/.</string>
+    <string name="home_failed">Không đọc được danh sách game.</string>
+
+    <string name="loading">Đang tải demo</string>
+    <string name="action_exit">Thoát</string>
+    <string name="action_replay">Xem lại</string>
+
+    <string name="badge_presses">×%1$d</string>
+
+    <string name="resume_title">Chuẩn bị</string>
+    <string name="resume_body">Demo sẽ tiếp tục khi hết đếm ngược.</string>
+
+    <string name="finished_title">Hoàn thành demo</string>
+    <string name="finished_body">Bạn đã thử hết các thao tác trong demo này.</string>
+
+    <string name="error_script_title">Không phát được kịch bản demo. Cần sửa các lỗi sau trong script.json:</string>
+    <string name="error_failed_title">Không mở được demo</string>
+    <string name="error_file_missing">Thiếu file demo hoặc không đọc được: %1$s</string>
+    <string name="error_playback">Không phát được video (%1$s).</string>
+    <string name="error_unexpected">Đã xảy ra lỗi: %1$s</string>
+
+    <string name="field_type_integer">số nguyên</string>
+    <string name="field_type_number">số</string>
+    <string name="field_type_string">chuỗi</string>
+    <string name="field_type_string_array">mảng ID nút</string>
+
+    <string name="violation_not_json_array">File không phải là một mảng JSON các bước.</string>
+    <string name="violation_step_not_object">Bước thứ %1$d trong file không phải là một object JSON.</string>
+    <string name="violation_missing_field">Bước thứ %1$d trong file: thiếu trường \"%2$s\".</string>
+    <string name="violation_wrong_type">Bước thứ %1$d trong file: \"%2$s\" phải là %3$s.</string>
+    <string name="violation_renamed_field">Bước thứ %1$d trong file: trường \"%2$s\" đã đổi tên thành \"%3$s\".</string>
+    <string name="violation_unknown_button">Bước thứ %1$d trong file: không có nút nào có ID \"%2$s\".</string>
+    <string name="violation_unknown_input_mode">Bước thứ %1$d trong file: inputMode \"%2$s\" phải là SEQUENCE, SIMULTANEOUS hoặc ANY_ORDER.</string>
+
+    <string name="violation_sequence_below_one">Bước %1$d: step_sequence bắt đầu từ 1.</string>
+    <string name="violation_duplicate_sequence">step_sequence %1$d bị trùng ở nhiều bước.</string>
+    <string name="violation_negative_trigger">Bước %1$d: triggerTimeMs (%2$d) phải từ 0 trở lên.</string>
+    <string name="violation_empty_targets">Bước %1$d: targetButtonIds phải có ít nhất một nút.</string>
+    <string name="violation_speed_range">Bước %1$d: playbackSpeed (%2$s) phải bằng 0 (dừng ngay), hoặc từ 0.1 đến 1.</string>
+    <string name="violation_negative_slow_duration">Bước %1$d: slowDurationMs (%2$d) phải từ 0 trở lên.</string>
+    <string name="violation_zero_speed_duration">Bước %1$d: playbackSpeed bằng 0 là dừng ngay, nên slowDurationMs phải bằng 0 (đang là %2$d).</string>
+    <string name="violation_too_many_simultaneous">Bước %1$d: bước SIMULTANEOUS có %2$d nút, tối đa là %3$d.</string>
+    <string name="violation_repeated_simultaneous">Bước %1$d: %2$s xuất hiện hai lần trong bước SIMULTANEOUS. Một nút không thể nhấn hai lần cùng lúc.</string>
+    <string name="violation_trigger_before_previous_stop">Bước %1$d: triggerTimeMs (%2$d) phải sau mốc dừng của bước %3$d (%4$d ms).</string>
+    <string name="violation_stop_after_video_end">Bước %1$d: mốc dừng (%2$d ms) phải trước khi video kết thúc (%3$d ms).</string>
+</resources>
