@@ -265,3 +265,17 @@ Yêu cầu: (1) video tua chậm phải mượt, không khựng; (2) bỏ dialog
 | F5 | Video giảm tốc dần từ 1× xuống `playbackSpeed` trong 0,3 giây, không đổi tốc độ đột ngột. Mốc dừng không đổi. | Thời gian chạy chậm thực tế ngắn hơn. Trên Galaxy A16, `slowDurationMs` 2000 ở 0.25× còn khoảng 1,25 giây. |
 
 Định dạng JSON chính thức cho BA: [docs/demo-script-format.md](docs/demo-script-format.md).
+
+## G. Tính điểm khi bấm nút (2026-10-01)
+
+Quy tắc đầy đủ: [docs/button-press-scoring-rules.md](docs/button-press-scoring-rules.md). Ngày 2026-10-01, bạn yêu cầu
+triển khai theo bộ rule này, nên cả 6 đề xuất được coi là đã đồng ý. Đề xuất nào cần đổi thì ghi vào cột "Trả lời".
+
+| # | Đã chốt và đã triển khai | Trả lời |
+| --- | --- | --- |
+| S1 | Chấm điểm theo bước, không theo lần bấm. Bước hoàn thành khi video còn chạy chậm được hạng Hoàn hảo; hoàn thành sau khi video đã dừng chờ được hạng Tốt. | |
+| S2 | Hoàn hảo 100 điểm, Tốt 50 điểm. Bước dừng ngay luôn được 100. | |
+| S3 | Hiện điểm ở góc trên bên phải trong lúc chơi, đối xứng với nút Thoát và không đè lên nút nào. Vị trí sẽ chỉnh theo Figma khi có quyền (E1). | |
+| S4 | Sau mỗi bước, chữ "ĐIỂM" phía trên số điểm đổi thành hạng vừa đạt ("HOÀN HẢO" / "TỐT"), đến khi tutorial kế tiếp hiện. | |
+| S5 | Không lưu điểm cao nhất. Điểm mất khi thoát demo. | |
+| S6 | Không có trọng số điểm riêng cho từng bước trong JSON. | |
