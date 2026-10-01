@@ -21,6 +21,16 @@
 
     <string name="finished_title">Demo complete</string>
     <string name="finished_body">You have tried every control in this demo.</string>
+    <!-- %1$d points earned, out of %2$d (100 per step). -->
+    <string name="finished_score">%1$d / %2$d points</string>
+    <!-- How many steps were done before the video stopped (%1$d), and after (%2$d). -->
+    <string name="finished_tiers">Perfect: %1$d · Good: %2$d</string>
+
+    <!-- The score in the top-right corner while the demo plays: a caption over the points. -->
+    <string name="score_label">SCORE</string>
+    <!-- The caption after a step, until the next one: done before the video stopped, or after. -->
+    <string name="score_tier_perfect">PERFECT</string>
+    <string name="score_tier_good">GOOD</string>
 
     <string name="error_script_title">This demo script cannot be played. Fix the following in script.json:</string>
     <string name="error_failed_title">The demo cannot start</string>

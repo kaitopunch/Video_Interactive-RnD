@@ -11,6 +11,7 @@ import com.pion.psremote.domain.model.TutorialStep
 import com.pion.psremote.domain.playback.PlaybackEvent
 import com.pion.psremote.domain.playback.SlowMotionRamp
 import com.pion.psremote.domain.playback.VideoPlayback
+import com.pion.psremote.domain.score.ScoreTier
 import com.pion.psremote.domain.usecase.LoadDemoUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -73,6 +74,7 @@ class DemoViewModel(
                     is DemoLoad.Invalid -> setState { copy(phase = DemoPhase.InvalidScript(demo.violations)) }
                     is DemoLoad.Ready -> {
                         steps = demo.steps
+                        setState { copy(score = score.copy(stepCount = demo.steps.size)) }
                         playback.prepare(demo.videoUri) // continues at PlaybackEvent.Prepared
                     }
                 }
@@ -91,7 +93,8 @@ class DemoViewModel(
 
     private fun startFromBeginning() {
         nextStepIndex = 0
-        setState { copy(phase = DemoPhase.Playing, tutorial = null) }
+        // The awards only: the step count is set with the steps, in load(), whatever order the two arrive in.
+        setState { copy(phase = DemoPhase.Playing, tutorial = null, score = score.copy(awards = emptyList())) }
         playback.cancelCue()
         playback.setSpeed(NORMAL_SPEED)
         playback.setMuted(false)
@@ -137,7 +140,7 @@ class DemoViewModel(
         val tutorial = currentState.tutorial ?: return
         if (currentState.resumeCountdown != null) return
         val progress = tutorial.progress.press(button)
-        if (progress.isComplete) completeStep() else setState { copy(tutorial = tutorial.copy(progress = progress)) }
+        if (progress.isComplete) completeStep(tutorial) else setState { copy(tutorial = tutorial.copy(progress = progress)) }
     }
 
     private fun onButtonReleased(button: ControllerButton) {
@@ -145,11 +148,15 @@ class DemoViewModel(
         setState { copy(tutorial = tutorial.copy(progress = tutorial.progress.release(button))) }
     }
 
-    /** README §6: done once, pending stop cancelled, tutorial hidden, 1.0× from the current position. */
-    private fun completeStep() {
+    /**
+     * README §6: done once, pending stop cancelled, tutorial hidden, 1.0× from the current position. Scored in the
+     * same update that hides the tutorial, so no frame shows the step gone and its points missing (scoring rules R1).
+     */
+    private fun completeStep(tutorial: ActiveTutorial) {
         playback.cancelCue()
         nextStepIndex++
-        setState { copy(tutorial = null) }
+        val tier = ScoreTier.of(tutorial.step, completedWhileWaiting = tutorial.isWaiting)
+        setState { copy(tutorial = null, score = score.award(tier)) }
         playback.setSpeed(NORMAL_SPEED)
         playback.setMuted(false)
         armNextTrigger()

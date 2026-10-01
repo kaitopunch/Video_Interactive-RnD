@@ -24,12 +24,13 @@ import com.pion.psremote.feature.demo.component.ExitButton
 import com.pion.psremote.feature.demo.component.FinishedPanel
 import com.pion.psremote.feature.demo.component.LoadingIndicator
 import com.pion.psremote.feature.demo.component.ResumeCountdownOverlay
+import com.pion.psremote.feature.demo.component.ScoreHud
 import com.pion.psremote.feature.demo.component.StepBadges
 import com.pion.psremote.feature.demo.component.TutorialSpotlight
 import com.pion.psremote.feature.demo.component.message
 
 /**
- * Stateless. Layers, bottom to top: video, controller, tutorial dim + badges, exit, then whichever modal
+ * Stateless. Layers, bottom to top: video, controller, score, tutorial dim + badges, exit, then whichever modal
  * the phase calls for. Nothing here decides anything: every `if` reads a value [DemoState] computed.
  */
 @Composable
@@ -61,6 +62,12 @@ private fun DemoLayers(
         if (state.isControllerVisible) {
             ControllerOverlay(layout, state.enabledButtons, onIntent)
         }
+        // Under the dim, like everything a tutorial does not point at: R2's ring and badge reach past R2 towards the
+        // score on a short window, and must stay on top. The points never change under the dim — they change in the
+        // update that removes it.
+        if (state.isScoreVisible) {
+            ScoreHud(layout.score, state.score.points, state.lastAward)
+        }
         if (state.tutorial != null) {
             val highlights = state.highlights
             TutorialSpotlight(layout, highlights)
@@ -72,7 +79,7 @@ private fun DemoLayers(
         when (val phase = state.phase) {
             DemoPhase.Loading -> LoadingIndicator()
             DemoPhase.Playing -> Unit
-            DemoPhase.Finished -> FinishedPanel(onIntent)
+            DemoPhase.Finished -> FinishedPanel(state.score, onIntent)
             is DemoPhase.InvalidScript -> ErrorPanel(
                 title = stringResource(R.string.error_script_title),
                 messages = phase.violations.map { it.message() },

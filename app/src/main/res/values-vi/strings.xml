@@ -19,6 +19,12 @@
 
     <string name="finished_title">Hoàn thành demo</string>
     <string name="finished_body">Bạn đã thử hết các thao tác trong demo này.</string>
+    <string name="finished_score">%1$d / %2$d điểm</string>
+    <string name="finished_tiers">Hoàn hảo: %1$d · Tốt: %2$d</string>
+
+    <string name="score_label">ĐIỂM</string>
+    <string name="score_tier_perfect">HOÀN HẢO</string>
+    <string name="score_tier_good">TỐT</string>
 
     <string name="error_script_title">Không phát được kịch bản demo. Cần sửa các lỗi sau trong script.json:</string>
     <string name="error_failed_title">Không mở được demo</string>

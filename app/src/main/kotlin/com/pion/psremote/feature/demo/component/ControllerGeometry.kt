@@ -29,6 +29,8 @@ data class ButtonGeometry(val bounds: Rect, val shape: ButtonShape) {
 data class ControllerLayout(
     val buttons: Map<ControllerButton, ButtonGeometry>,
     val exit: ButtonGeometry,
+    /** The score display. A slot here, not a position in its composable, so the overlap checks cover it too. */
+    val score: ButtonGeometry,
 )
 
 /** Safe-area insets in px: the display cutout, which in landscape sits on a left or right edge. */
@@ -60,6 +62,7 @@ object ControllerGeometry {
         return ControllerLayout(
             buttons = SPECS.mapValues { (_, spec) -> frame.place(spec) },
             exit = frame.place(EXIT),
+            score = frame.place(SCORE),
         )
     }
 
@@ -152,6 +155,12 @@ object ControllerGeometry {
     )
 
     private val EXIT = Spec(Anchor.Left, 8f, 8f, 9f, 9f, ButtonShape.Circle)
+
+    /**
+     * Exit's corner on the other side, the same top edge: right − 18 to right − 4 across, 3.5 to 15.5 down. R2 ends
+     * 20 units from the right edge, so 2 units stay between them. Two lines tall: a caption over the points.
+     */
+    private val SCORE = Spec(Anchor.Right, 11f, 9.5f, 14f, 12f, ButtonShape.Rounded)
 }
 
 /** cos 45°: how far along a corner's radius its 45° point sits. */

@@ -9,6 +9,8 @@ import com.pion.psremote.domain.model.ControllerButton
 import com.pion.psremote.domain.model.InputMode
 import com.pion.psremote.domain.model.ScriptViolation
 import com.pion.psremote.domain.model.TutorialStep
+import com.pion.psremote.domain.score.Score
+import com.pion.psremote.domain.score.ScoreTier
 
 data class DemoState(
     val phase: DemoPhase = DemoPhase.Loading,
@@ -20,10 +22,23 @@ data class DemoState(
      * returning already shows the dialog instead of one frame of live video.
      */
     val resumeCountdown: Int? = null,
+    /** This run's score. Reset when a run starts, so Replay starts from 0 (scoring rules R7). */
+    val score: Score = Score(),
 ) : UiState {
 
     val isControllerVisible: Boolean
         get() = phase == DemoPhase.Playing || phase == DemoPhase.Finished
+
+    /** While playing only: the finished panel shows the final score itself, and an error has none. */
+    val isScoreVisible: Boolean
+        get() = phase == DemoPhase.Playing
+
+    /**
+     * The tier the last step earned, shown beside the score until the next tutorial appears (scoring rules §5).
+     * Derived, so it needs no timer to hide it and cannot outlive a Replay.
+     */
+    val lastAward: ScoreTier?
+        get() = if (tutorial == null) score.awards.lastOrNull() else null
 
     /** The finished and error panels carry their own exit; a second one beside them would be noise. */
     val isExitButtonVisible: Boolean

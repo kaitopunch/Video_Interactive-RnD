@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.pion.psremote.R
 import com.pion.psremote.core.ui.theme.PsColors
 import com.pion.psremote.core.ui.token.Spacing
+import com.pion.psremote.domain.score.Score
+import com.pion.psremote.domain.score.ScoreTier
 import com.pion.psremote.feature.demo.DemoIntent
 
 @Composable
@@ -53,17 +57,31 @@ fun ResumeCountdownOverlay(secondsLeft: Int, modifier: Modifier = Modifier) {
     }
 }
 
-/** The end of the video: replay or leave (confirm.md Q13). */
+/**
+ * The end of the video: the run's score, then replay or leave (confirm.md Q13).
+ *
+ * Scrolls: on a 320 dp-tall phone at 200 % text, title, score, tiers, body and buttons are taller than the screen,
+ * and a panel that clips its buttons leaves the user no way out.
+ */
 @Composable
-fun FinishedPanel(onIntent: (DemoIntent) -> Unit, modifier: Modifier = Modifier) {
+fun FinishedPanel(score: Score, onIntent: (DemoIntent) -> Unit, modifier: Modifier = Modifier) {
     ModalScrim(modifier) {
         Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surface) {
             Column(
-                modifier = Modifier.padding(Spacing.xl),
+                modifier = Modifier.verticalScroll(rememberScrollState()).padding(Spacing.xl),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.l),
             ) {
                 Text(stringResource(R.string.finished_title), style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    stringResource(R.string.finished_score, score.points, score.maxPoints),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = PsColors.Highlight,
+                )
+                Text(
+                    stringResource(R.string.finished_tiers, score.count(ScoreTier.PERFECT), score.count(ScoreTier.GOOD)),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 Text(
                     stringResource(R.string.finished_body),
                     style = MaterialTheme.typography.bodyMedium,
