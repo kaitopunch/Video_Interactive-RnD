@@ -14,6 +14,14 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 
 /**
+ * A video's length in milliseconds, or why it could not be read. `RemoteDemoRepository` reads through this rather
+ * than [VideoDurationReader], so its suite runs on the JVM with a lambda in place of Media3 and a network (LLM.md §9).
+ */
+fun interface VideoDurations {
+    suspend fun durationMs(url: String): AppResult<Long>
+}
+
+/**
  * A video's length, read before the player exists, so the whole script — "every stop point is before the end of
  * the video" included — is checked before a single frame plays (confirm.md Q12).
  *
@@ -22,17 +30,36 @@ import java.io.IOException
  * platform's opens its own connection and blocks with no timeout.
  */
 @OptIn(UnstableApi::class)
-class VideoDurationReader(context: Context, private val cache: VideoCache) {
+class VideoDurationReader(context: Context, private val cache: VideoCache) : VideoDurations {
 
     private val context = context.applicationContext
 
-    suspend fun durationMs(url: String): AppResult<Long> {
+    override suspend fun durationMs(url: String): AppResult<Long> {
         val retriever = MetadataRetriever.Builder(context, MediaItem.fromUri(url))
             .setMediaSourceFactory(cache.mediaSourceFactory())
             .build()
         return try {
-            val durationUs = withTimeoutOrNull(TIMEOUT_MS) { retriever.retrieveDurationUs().await() }
-            when (durationUs) {
+            read(url) { retriever.retrieveDurationUs().await() }
+        } finally {
+            retriever.close()
+        }
+    }
+
+    internal companion object {
+        /**
+         * A backstop, not the bound a user normally meets. A dead connection fails sooner by itself: Media3's HTTP
+         * source gives up after 8 s without connecting or without a byte. A slow one keeps going, as the player
+         * would: on an SM-A165F whose Wi-Fi dipped (2026-10-02) the 151 kB header took 14 s, and the player itself
+         * then took 22 s more — a 15 s limit here turned a slow start into an error screen.
+         */
+        const val TIMEOUT_MS = 60_000L
+
+        /**
+         * What one read tells the error screen: [retrieve] answers in microseconds or throws. Apart from the retriever
+         * so `VideoDurationReaderTest` reaches every branch without Media3's extractors or a network.
+         */
+        suspend fun read(url: String, retrieve: suspend () -> Long): AppResult<Long> = try {
+            when (val durationUs = withTimeoutOrNull(TIMEOUT_MS) { retrieve() }) {
                 null -> AppResult.Failure(AppError.Network("timeout"))
                 C.TIME_UNSET -> AppResult.Failure(AppError.NotFound(url))
                 else -> AppResult.Success(durationUs / 1_000)
@@ -46,18 +73,6 @@ class VideoDurationReader(context: Context, private val cache: VideoCache) {
             AppResult.Failure(AppError.Network(unreachable::class.simpleName))
         } catch (unreadable: IOException) {
             AppResult.Failure(AppError.NotFound(url)) // fetched, but not a video Media3 can read
-        } finally {
-            retriever.close()
         }
-    }
-
-    private companion object {
-        /**
-         * A backstop, not the bound a user normally meets. A dead connection fails sooner by itself: Media3's HTTP
-         * source gives up after 8 s without connecting or without a byte. A slow one keeps going, as the player
-         * would: on an SM-A165F whose Wi-Fi dipped (2026-10-02) the 151 kB header took 14 s, and the player itself
-         * then took 22 s more — a 15 s limit here turned a slow start into an error screen.
-         */
-        const val TIMEOUT_MS = 60_000L
     }
 }

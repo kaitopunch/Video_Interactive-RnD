@@ -7,7 +7,7 @@ import com.pion.psremote.core.common.map
 import com.pion.psremote.data.catalogue.CatalogueApi
 import com.pion.psremote.data.catalogue.CatalogueItem
 import com.pion.psremote.data.catalogue.toSummaries
-import com.pion.psremote.data.playback.VideoDurationReader
+import com.pion.psremote.data.playback.VideoDurations
 import com.pion.psremote.domain.model.DemoSource
 import com.pion.psremote.domain.model.DemoSummary
 import com.pion.psremote.domain.repository.DemoRepository
@@ -21,7 +21,7 @@ import com.pion.psremote.domain.repository.DemoRepository
  */
 class RemoteDemoRepository(
     private val api: CatalogueApi,
-    private val durations: VideoDurationReader,
+    private val durations: VideoDurations,
 ) : DemoRepository {
 
     /** The last list fetched. Replaced whole, never mutated, so `@Volatile` is all a reader on another thread needs. */

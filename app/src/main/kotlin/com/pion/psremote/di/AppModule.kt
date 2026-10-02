@@ -7,6 +7,7 @@ import com.pion.psremote.data.catalogue.CatalogueApi
 import com.pion.psremote.data.demo.RemoteDemoRepository
 import com.pion.psremote.data.playback.VideoCache
 import com.pion.psremote.data.playback.VideoDurationReader
+import com.pion.psremote.data.playback.VideoDurations
 import com.pion.psremote.domain.playback.VideoPlayback
 import com.pion.psremote.domain.repository.DemoRepository
 import com.pion.psremote.domain.usecase.LoadDemoUseCase
@@ -15,6 +16,7 @@ import com.pion.psremote.feature.demo.DemoViewModel
 import com.pion.psremote.feature.home.HomeViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 /**
@@ -29,7 +31,8 @@ val appModule = module {
     single { CatalogueApi(apiKey = BuildConfig.CATALOGUE_API_KEY) }
     // One per process: a second SimpleCache on the same folder throws (VideoCache's KDoc).
     single { VideoCache(androidContext()) }
-    single { VideoDurationReader(androidContext(), get()) }
+    // Bound under its port too: the repository reads through VideoDurations, so its suite can pass a lambda.
+    single { VideoDurationReader(androidContext(), get()) } bind VideoDurations::class
     single<DemoRepository> { RemoteDemoRepository(api = get(), durations = get()) }
     factory { LoadDemoUseCase(get()) }
 
