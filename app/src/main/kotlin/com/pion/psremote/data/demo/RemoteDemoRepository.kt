@@ -41,8 +41,12 @@ class RemoteDemoRepository(
             is AppResult.Success -> fetched.value.byId(demoId)
         } ?: return AppResult.Failure(AppError.NotFound(demoId))
 
-        val script = item.customFields?.json ?: return AppResult.Failure(AppError.NotFound(SCRIPT_FIELD))
-        val video = item.customFields.sourceVid ?: return AppResult.Failure(AppError.NotFound(VIDEO_FIELD))
+        // A field the CMS form left blank is as missing as one it left out: a blank URL would reach Media3 and come
+        // back as "not found: " with nothing named, and the BA would not know which field to fill.
+        val script = item.customFields?.json?.takeIf { it.isNotBlank() }
+            ?: return AppResult.Failure(AppError.NotFound(SCRIPT_FIELD))
+        val video = item.customFields.sourceVid?.takeIf { it.isNotBlank() }
+            ?: return AppResult.Failure(AppError.NotFound(VIDEO_FIELD))
         return durations.durationMs(video).map { durationMs -> DemoSource(video, durationMs, script) }
     }
 
