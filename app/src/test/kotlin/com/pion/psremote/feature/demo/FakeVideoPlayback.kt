@@ -30,6 +30,11 @@ class FakeVideoPlayback : VideoPlayback {
         check(eventChannel.trySend(event).isSuccess)
     }
 
+    /** Ends [events] with [cause], as a player that crashed or was released under its collector would. */
+    fun breakEvents(cause: Throwable) {
+        eventChannel.close(cause)
+    }
+
     override fun prepare(videoUri: String) {
         preparedUri = videoUri
         isPlaying = false
