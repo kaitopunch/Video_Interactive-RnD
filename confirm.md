@@ -279,3 +279,19 @@ triển khai theo bộ rule này, nên cả 6 đề xuất được coi là đã
 | S4 | Sau mỗi bước, chữ "ĐIỂM" phía trên số điểm đổi thành hạng vừa đạt ("HOÀN HẢO" / "TỐT"), đến khi tutorial kế tiếp hiện. | |
 | S5 | Không lưu điểm cao nhất. Điểm mất khi thoát demo. | |
 | S6 | Không có trọng số điểm riêng cho từng bước trong JSON. | |
+
+## H. Lấy danh sách game từ API (2026-10-02)
+
+Nguồn: `GET https://api.piontech.site/stores/api/v6.0/public/items/get-all?category_id=5f388373-ec63-441e-9054-49fb02e9941f`,
+header `X-API-Key`. Mỗi item là một game: `custom_fields.json` là kịch bản, `custom_fields.source_vid` là link video.
+Thiếu hoặc sai key, server trả 404.
+
+| # | Đã chốt | Ghi chú |
+| --- | --- | --- |
+| H1 | API thay hẳn `assets/demos/`. App cần mạng, có quyền INTERNET. Thêm hoặc sửa game không cần build lại app. | Thay cho E2 và Q3. APK release giảm khoảng 24 MB. |
+| H2 | Video phát trực tuyến, lưu cache trên máy (Media3, tối đa 256 MB). Mở lại game không tải lại. | Buffer giữa chừng không làm mất thời gian chạy chậm, vì điểm dừng tính theo vị trí video (D5). |
+| H3 | Home lỗi mạng: hiện thông báo kèm nút **Thử lại**. Không lưu danh sách để dùng offline. Mất mạng khi mở game: màn lỗi có nút Thoát. | Nút Thử lại cũng hiện khi danh sách rỗng. |
+| H4 | Tên game lấy từ `name`. Sắp xếp theo `priority` tăng dần. `status = false` thì ẩn khỏi Home. Bỏ qua `view`, `like`, `old_id`. Thẻ game không có ảnh. | Tên đúng chính tả, ví dụ "Spider Man". |
+| H5 | API key lưu trong `local.properties` (`CATALOGUE_API_KEY`, không commit), build vào `BuildConfig`. Domain, path và `category_id` là hằng số trong code. Một môi trường duy nhất. | Key nằm trong APK nên ai decompile cũng đọc được. Chấp nhận vì endpoint là `public`. |
+| H6 | Kịch bản sai: mở game sẽ thấy màn liệt kê lỗi như Q12. Không còn kiểm tra kịch bản lúc build. | Kiểm tra toàn bộ catalogue thật: chạy `RemoteDemoRepositoryDeviceTest` trên máy thật. |
+| H7 | Video upload phải là bản đã chạy `tools/interpolate-slow-segments.py`. Tool đọc `demo-sources/<id>/video.mp4` + `demo-sources/<id>/script.json`, ghi ra `demo-sources/<id>/video-interpolated.mp4` để upload. | Kiểm tra ngày 2026-10-02: Spider Man trên server đã là bản nội suy (md5 khớp). Sample thì chưa; bản nội suy nằm ở `demo-sources/sample/video-interpolated.mp4`. |
