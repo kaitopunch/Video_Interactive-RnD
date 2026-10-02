@@ -6,12 +6,13 @@
     <string name="home_title">Choose a game</string>
     <string name="home_subtitle">Play along with the gameplay video using the on-screen controller.</string>
     <string name="home_loading">Loading games</string>
-    <string name="home_empty">No demo is bundled with this build. Add a folder under assets/demos/.</string>
-    <string name="home_failed">The list of games could not be read.</string>
+    <string name="home_empty">No game is available yet.</string>
+    <string name="home_failed">The games could not be loaded. Check your internet connection and try again.</string>
 
     <string name="loading">Loading demo</string>
     <string name="action_exit">Exit</string>
     <string name="action_replay">Replay</string>
+    <string name="action_retry">Try again</string>
 
     <!-- A step's instruction is the lit buttons themselves; the only text is this, on an ANY_ORDER button pressed more than once. -->
     <string name="badge_presses">×%1$d</string>
@@ -32,10 +33,13 @@
     <string name="score_tier_perfect">PERFECT</string>
     <string name="score_tier_good">GOOD</string>
 
-    <string name="error_script_title">This demo script cannot be played. Fix the following in script.json:</string>
+    <string name="error_script_title">This demo script cannot be played. Fix the following in the game\'s custom_fields.json in the catalogue:</string>
     <string name="error_failed_title">The demo cannot start</string>
-    <string name="error_file_missing">Demo file missing or unreadable: %1$s</string>
+    <!-- %1$s: a catalogue field (custom_fields.json, custom_fields.source_vid), a video URL, or a game id. -->
+    <string name="error_file_missing">Missing or unreadable in the catalogue: %1$s</string>
     <string name="error_playback">The video could not be played (%1$s).</string>
+    <!-- %1$s is the HTTP status or the kind of failure, for whoever is told about it. -->
+    <string name="error_network">The server could not be reached (%1$s). Check your internet connection.</string>
     <string name="error_unexpected">Something went wrong: %1$s</string>
 
     <string name="field_type_integer">an integer</string>

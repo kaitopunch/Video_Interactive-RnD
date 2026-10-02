@@ -1,8 +1,8 @@
 package com.pion.psremote.domain.model
 
-/** The raw files of one demo, as the repository found them. Nothing here has been validated yet. */
+/** The raw parts of one demo, as the repository found them. Nothing here has been validated yet. */
 data class DemoSource(
-    /** A URI Media3 can open, e.g. `asset:///demos/sample/video.mp4`. */
+    /** A URI Media3 can open: the catalogue entry's `source_vid`, an `https://` URL. */
     val videoUri: String,
     val videoDurationMs: Long,
     val scriptJson: String,

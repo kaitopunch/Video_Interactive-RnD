@@ -9,7 +9,10 @@ const val PACKAGE = "com.pion.psremote"
 
 /** Trace sections the app emits (data layer only, LLM.md §2), read back by the benchmarks. */
 object Sections {
-    /** `AssetDemoRepository.load`: the script and the video's duration, read on the IO thread. */
+    /**
+     * `RemoteDemoRepository.load`: the catalogue entry and the video's duration, read over the network since
+     * 2026-10-02 (confirm.md H1) — numbers from before that measured an asset read, and do not compare.
+     */
     const val READ_DEMO = "PsRemote.readDemo"
 
     /** Player built → first frame ready: everything the user waits through after tapping a game. */
@@ -17,7 +20,8 @@ object Sections {
 }
 
 /**
- * The sample demo is the benchmark fixture: 70 s of test pattern, first step a single CROSS at 5 000 ms
+ * The catalogue's "Sample" game is the benchmark fixture — the phone needs a connection, and a build with the
+ * catalogue key: 70 s of test pattern, first step a single CROSS at 5 000 ms
  * slowed to 0.5× for 2 000 ms, so the video stops and waits at 6 000 ms ≈ 7 s after it starts.
  */
 private const val SAMPLE_TITLE = "Sample"

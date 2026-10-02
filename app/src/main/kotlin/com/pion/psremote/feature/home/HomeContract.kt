@@ -12,13 +12,13 @@ data class HomeState(
 
 sealed interface HomePhase {
 
-    /** Reading the folder list. */
+    /** Fetching the catalogue. */
     data object Loading : HomePhase
 
     /** At least one demo. */
     data class Ready(val demos: List<DemoSummary>) : HomePhase
 
-    /** `assets/demos/` holds no folder: the APK was built without a demo. */
+    /** The catalogue lists no game to show: none uploaded yet, or every one hidden by its `status`. */
     data object Empty : HomePhase
 
     data class Failed(val error: AppError) : HomePhase
@@ -26,6 +26,7 @@ sealed interface HomePhase {
 
 sealed interface HomeIntent : UiIntent {
     data object ScreenStarted : HomeIntent
+    data object RetryClicked : HomeIntent
     data class DemoClicked(val demoId: String) : HomeIntent
 }
 

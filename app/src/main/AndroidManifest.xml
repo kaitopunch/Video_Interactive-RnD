@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- No permissions: the demo video and script are bundled, nothing is read from storage or the network. -->
+    <!-- The game list, scripts and videos come from the store's catalogue (confirm.md H1). Nothing else. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".PsRemoteApp"

@@ -3,6 +3,7 @@ package com.pion.psremote.feature.demo
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.pion.psremote.data.playback.Media3VideoPlayback
+import com.pion.psremote.data.playback.VideoCache
 
 /**
  * Owns the demo screen's player for exactly as long as the screen's ViewModelStore.
@@ -16,9 +17,9 @@ import com.pion.psremote.data.playback.Media3VideoPlayback
  * Cost of holding the player in `remember` instead: a configuration change builds a second player at
  * position 0 behind a [DemoViewModel] that still believes the video is stopped at 34 750 ms.
  */
-class DemoPlaybackHost(context: Context) : ViewModel() {
+class DemoPlaybackHost(context: Context, cache: VideoCache) : ViewModel() {
 
-    val playback = Media3VideoPlayback(context)
+    val playback = Media3VideoPlayback(context, cache)
 
     override fun onCleared() {
         playback.release()

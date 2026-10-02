@@ -8,7 +8,7 @@ import com.pion.psremote.domain.repository.DemoRepository
 import kotlinx.coroutines.Job
 
 /**
- * The game picker. Lists the bundled demos and opens the one the user taps; what a demo contains is the
+ * The game picker. Lists the catalogue's games and opens the one the user taps; what a game contains is the
  * demo screen's business, so a broken one is listed like any other (confirm.md Q12).
  */
 class HomeViewModel(
@@ -21,16 +21,25 @@ class HomeViewModel(
     override fun onIntent(intent: HomeIntent) {
         when (intent) {
             HomeIntent.ScreenStarted -> onScreenStarted()
+            HomeIntent.RetryClicked -> onRetryClicked()
             is HomeIntent.DemoClicked -> sendEffect(HomeEffect.OpenDemo(intent.demoId))
         }
     }
 
     /**
-     * Read once: the bundled list cannot change while the app runs. A failed read is retried on the next
-     * return to the screen, which is the only retry the user has — there is nothing else to press.
+     * Fetched once per Home, not on every return from a demo: a spinner after each game would be the price of
+     * seeing a CMS edit a few minutes sooner. A failed fetch is retried on the next return too.
      */
     private fun onScreenStarted() {
         if (loadJob == null || currentState.phase is HomePhase.Failed) load()
+    }
+
+    /**
+     * Shown under the error and under an empty list (confirm.md H3): an empty catalogue may be a BA mid-edit. Not
+     * while a fetch is running or the list is shown — a second tap must not start a second request.
+     */
+    private fun onRetryClicked() {
+        if (currentState.phase is HomePhase.Failed || currentState.phase is HomePhase.Empty) load()
     }
 
     private fun load() {

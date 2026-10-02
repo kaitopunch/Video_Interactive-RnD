@@ -53,6 +53,7 @@ fun ScriptViolation.message(): String = when (this) {
 @Composable
 fun AppError.message(): String = when (this) {
     is AppError.NotFound -> stringResource(R.string.error_file_missing, what)
+    is AppError.Network -> stringResource(R.string.error_network, reason ?: "?")
     is AppError.Playback -> stringResource(R.string.error_playback, reason ?: "?")
     is AppError.Unexpected -> stringResource(R.string.error_unexpected, message ?: "?")
 }

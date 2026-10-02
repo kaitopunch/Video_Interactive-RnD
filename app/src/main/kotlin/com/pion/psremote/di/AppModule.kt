@@ -1,8 +1,12 @@
 package com.pion.psremote.di
 
+import com.pion.psremote.BuildConfig
 import com.pion.psremote.core.common.AppLogger
 import com.pion.psremote.core.log.AndroidAppLogger
-import com.pion.psremote.data.demo.AssetDemoRepository
+import com.pion.psremote.data.catalogue.CatalogueApi
+import com.pion.psremote.data.demo.RemoteDemoRepository
+import com.pion.psremote.data.playback.VideoCache
+import com.pion.psremote.data.playback.VideoDurationReader
 import com.pion.psremote.domain.playback.VideoPlayback
 import com.pion.psremote.domain.repository.DemoRepository
 import com.pion.psremote.domain.usecase.LoadDemoUseCase
@@ -22,11 +26,15 @@ import org.koin.dsl.module
  */
 val appModule = module {
     single<AppLogger> { AndroidAppLogger }
-    single<DemoRepository> { AssetDemoRepository(androidContext()) }
+    single { CatalogueApi(apiKey = BuildConfig.CATALOGUE_API_KEY) }
+    // One per process: a second SimpleCache on the same folder throws (VideoCache's KDoc).
+    single { VideoCache(androidContext()) }
+    single { VideoDurationReader(androidContext(), get()) }
+    single<DemoRepository> { RemoteDemoRepository(api = get(), durations = get()) }
     factory { LoadDemoUseCase(get()) }
 
     viewModel { HomeViewModel(repository = get(), log = get()) }
-    viewModel { DemoPlaybackHost(androidContext()) }
+    viewModel { DemoPlaybackHost(androidContext(), get()) }
     // demoId and the player come from DemoRoute: the route argument, and the host on the same back-stack entry.
     viewModel { params ->
         DemoViewModel(

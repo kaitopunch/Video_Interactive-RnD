@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -54,8 +55,8 @@ internal fun HomeScreen(
             when (val phase = state.phase) {
                 HomePhase.Loading -> Loading()
                 is HomePhase.Ready -> DemoGrid(phase.demos, onIntent)
-                HomePhase.Empty -> Message(R.string.home_empty)
-                is HomePhase.Failed -> Message(R.string.home_failed)
+                HomePhase.Empty -> Message(R.string.home_empty, onIntent)
+                is HomePhase.Failed -> Message(R.string.home_failed, onIntent)
             }
         }
     }
@@ -80,10 +81,16 @@ private fun Loading() {
     }
 }
 
+/** Both messages come with Retry (confirm.md H3): with no list there is nothing else on the screen to press. */
 @Composable
-private fun Message(@StringRes text: Int) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun Message(@StringRes text: Int, onIntent: (HomeIntent) -> Unit) {
+    Column(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.l, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(stringResource(text), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+        Button(onClick = { onIntent(HomeIntent.RetryClicked) }) { Text(stringResource(R.string.action_retry)) }
     }
 }
 

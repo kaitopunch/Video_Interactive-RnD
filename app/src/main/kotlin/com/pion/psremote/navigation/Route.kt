@@ -12,7 +12,7 @@ sealed interface Route {
     @Serializable
     data object Home : Route
 
-    /** [demoId] is a folder under `assets/demos/`. */
+    /** [demoId] is a catalogue entry's id (`DemoSummary.id`). */
     @Serializable
     data class Demo(val demoId: String) : Route
 }

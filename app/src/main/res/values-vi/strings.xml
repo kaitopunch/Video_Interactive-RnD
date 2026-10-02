@@ -5,12 +5,13 @@
     <string name="home_title">Chọn game</string>
     <string name="home_subtitle">Điều khiển theo video gameplay bằng tay cầm trên màn hình.</string>
     <string name="home_loading">Đang tải danh sách game</string>
-    <string name="home_empty">Bản build này chưa có demo nào. Thêm một thư mục vào assets/demos/.</string>
-    <string name="home_failed">Không đọc được danh sách game.</string>
+    <string name="home_empty">Hiện chưa có game nào.</string>
+    <string name="home_failed">Không tải được danh sách game. Kiểm tra kết nối mạng rồi thử lại.</string>
 
     <string name="loading">Đang tải demo</string>
     <string name="action_exit">Thoát</string>
     <string name="action_replay">Xem lại</string>
+    <string name="action_retry">Thử lại</string>
 
     <string name="badge_presses">×%1$d</string>
 
@@ -26,10 +27,11 @@
     <string name="score_tier_perfect">HOÀN HẢO</string>
     <string name="score_tier_good">TỐT</string>
 
-    <string name="error_script_title">Không phát được kịch bản demo. Cần sửa các lỗi sau trong script.json:</string>
+    <string name="error_script_title">Không phát được kịch bản demo. Cần sửa các lỗi sau trong custom_fields.json của game trên catalogue:</string>
     <string name="error_failed_title">Không mở được demo</string>
-    <string name="error_file_missing">Thiếu file demo hoặc không đọc được: %1$s</string>
+    <string name="error_file_missing">Catalogue thiếu hoặc không đọc được: %1$s</string>
     <string name="error_playback">Không phát được video (%1$s).</string>
+    <string name="error_network">Không kết nối được máy chủ (%1$s). Kiểm tra kết nối mạng.</string>
     <string name="error_unexpected">Đã xảy ra lỗi: %1$s</string>
 
     <string name="field_type_integer">số nguyên</string>

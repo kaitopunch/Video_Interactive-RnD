@@ -8,8 +8,17 @@ package com.pion.psremote.core.common
  */
 sealed interface AppError {
 
-    /** A bundled demo file (video or script) is missing or unreadable. [what] names the file. */
+    /**
+     * A game, or a part of it, is not there or cannot be read: an id the catalogue does not list, a catalogue
+     * entry missing its script or video field, a video URL the server has no file at. [what] names it.
+     */
     data class NotFound(val what: String) : AppError
+
+    /**
+     * The catalogue or a video could not be fetched: no connection, a timeout, or the server answered with an
+     * error or a body that is not the catalogue. [reason] is the HTTP status or the exception's class name.
+     */
+    data class Network(val reason: String?) : AppError
 
     /** The player failed while preparing or playing the video. [reason] is Media3's error code name. */
     data class Playback(val reason: String?) : AppError

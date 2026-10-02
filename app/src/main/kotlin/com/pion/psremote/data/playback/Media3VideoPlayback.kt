@@ -20,15 +20,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
- * [VideoPlayback] on a Media3 [ExoPlayer]. One of the two files that import `androidx.media3.**`;
- * the other is the surface composable that draws [player] (LLM.md §4).
+ * [VideoPlayback] on a Media3 [ExoPlayer]. Media3 is imported only under `data/playback/` and by the surface
+ * composable that draws [player] (LLM.md §2). The video streams through [cache] (confirm.md H2).
  *
  * Cues are [PlayerMessage]s pinned to a video position. The player delivers one when *playback* reaches
  * that position, which is what makes a step's slow phase immune to buffering and to time spent in the
  * background (README §4, D5). Delivery is on the main looper, the same thread the ViewModel runs on.
  */
 @OptIn(UnstableApi::class)
-class Media3VideoPlayback(context: Context) : VideoPlayback {
+class Media3VideoPlayback(context: Context, cache: VideoCache) : VideoPlayback {
 
     /**
      * Speed changes go to the platform `AudioTrack` instead of Media3's own time-stretcher. The default
@@ -39,7 +39,7 @@ class Media3VideoPlayback(context: Context) : VideoPlayback {
     val player: ExoPlayer = ExoPlayer.Builder(
         context.applicationContext,
         DefaultRenderersFactory(context.applicationContext).setEnableAudioTrackPlaybackParams(true),
-    ).build()
+    ).setMediaSourceFactory(cache.mediaSourceFactory()).build()
 
     /** Unlimited, so an event raised while the collector is busy is queued, never dropped. */
     private val eventChannel = Channel<PlaybackEvent>(Channel.UNLIMITED)
