@@ -124,6 +124,19 @@ class HomeViewModelTest {
         assertEquals(HomePhase.Ready(DEMOS), state.phase)
     }
 
+    /** ON_START fires again after a quick trip to the background, while the first fetch can still be on the way. */
+    @Test
+    fun `a return to Home while the first fetch is running does not start a second`() = runTest(dispatcher) {
+        repository.listGate = CompletableDeferred()
+        vm.onIntent(HomeIntent.ScreenStarted)
+        vm.onIntent(HomeIntent.ScreenStarted)
+
+        repository.listGate?.complete(Unit)
+
+        assertEquals(1, repository.listCalls)
+        assertEquals(HomePhase.Ready(DEMOS), state.phase)
+    }
+
     @Test
     fun `a throwing repository is contained, and the retry reaches it`() = runTest(dispatcher) {
         repository.throwOnList = IllegalStateException("catalogue unreadable")

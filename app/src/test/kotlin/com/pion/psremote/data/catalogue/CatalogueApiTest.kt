@@ -2,7 +2,11 @@ package com.pion.psremote.data.catalogue
 
 import com.pion.psremote.core.common.AppError
 import com.pion.psremote.core.common.AppResult
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import okhttp3.Call
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -10,13 +14,20 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 /**
  * The request the app sends and every way the answer can go wrong, without a network: an interceptor stands in
  * for the server. The live catalogue is checked on a phone, by `RemoteDemoRepositoryDeviceTest`.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class CatalogueApiTest {
 
     private var sent: Request? = null
@@ -88,6 +99,59 @@ class CatalogueApiTest {
         val result = api(respond(200, "<html>maintenance</html>")).items()
 
         assertEquals(AppError.Network::class, ((result as AppResult.Failure).error)::class)
+    }
+
+    @Test
+    fun `a server error is a network failure naming its status`() = runTest {
+        assertEquals(AppResult.Failure(AppError.Network("HTTP 503")), api(respond(503, "")).items())
+    }
+
+    @Test
+    fun `a call that times out is a network failure, not a crash`() = runTest {
+        assertEquals(
+            AppResult.Failure(AppError.Network("SocketTimeoutException")),
+            api { throw SocketTimeoutException("timeout") }.items(),
+        )
+    }
+
+    /** MVI §9, "every network wait is bounded": without it a server that never answers keeps Home's spinner up. */
+    @Test
+    fun `the whole call is bounded, so Home's spinner always comes down`() {
+        assertEquals(15_000, CatalogueApi.defaultClient().callTimeoutMillis)
+    }
+
+    /** An empty catalogue would tell the BA the category is empty; an empty body says nothing about it. */
+    @Test
+    fun `an empty answer is a failure, not an empty list`() = runTest {
+        val result = api(respond(200, "")).items()
+
+        assertEquals(AppError.Network::class, ((result as AppResult.Failure).error)::class)
+    }
+
+    @Test
+    fun `a field of the wrong type is a failure, not a crash`() {
+        val result = CatalogueApi.parse("""{"data": [{"id": "a", "priority": "first", "status": "yes"}]}""")
+
+        assertEquals(AppError.Network::class, ((result as AppResult.Failure).error)::class)
+    }
+
+    @Test
+    fun `leaving Home cancels the request in flight`() = runTest {
+        val sent = LinkedBlockingQueue<Call>()
+        val release = CountDownLatch(1)
+        val api = CatalogueApi(KEY, OkHttpClient.Builder().addInterceptor(Interceptor { chain ->
+            sent.put(chain.call())
+            release.await(5, TimeUnit.SECONDS)
+            throw IOException("released by the test")
+        }).build())
+
+        val fetch = launch { api.items() }
+        runCurrent()
+        val call = requireNotNull(sent.poll(5, TimeUnit.SECONDS)) { "the request was never sent" }
+        fetch.cancel()
+        release.countDown()
+
+        assertTrue("the connection was kept until the timeout", call.isCanceled())
     }
 
     @Test
