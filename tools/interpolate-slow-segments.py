@@ -7,19 +7,20 @@ still shows the source frame rate on screen. Every source frame keeps its timest
 copied untouched (the output is variable frame rate), so the triggers and stop points in script.json still
 land on the same scene. A stop on a source frame's time (11500 ms at 30 fps) pauses on that source frame.
 
-Only the slow phases are interpolated, not the whole video: the APK grows by a couple of MB instead of
-several times over. At the slow speed the phone decodes what it did before (120 fps x 0.25 = 30 a second);
+Only the slow phases are interpolated, not the whole video: the file the phone streams grows by a couple of
+MB instead of several times over. At the slow speed the phone decodes what it did before (120 fps x 0.25 = 30 a second);
 only when a step is completed early, or during the 0.3 s ramp, does it decode the rest of a 120 fps stretch
 at up to 1x, for half a second at most.
 
     python3 tools/interpolate-slow-segments.py <demo-id>
 
-reads   demo-sources/<demo-id>/video.mp4                the original, kept out of the APK
-        app/src/main/assets/demos/<demo-id>/script.json
-writes  app/src/main/assets/demos/<demo-id>/video.mp4
+reads   demo-sources/<demo-id>/video.mp4                the original, never uploaded
+        demo-sources/<demo-id>/script.json              a copy of the game's custom_fields.json in the catalogue
+writes  demo-sources/<demo-id>/video-interpolated.mp4   the file to upload as the game's source_vid
 
-Run it again whenever triggerTimeMs, playbackSpeed or slowDurationMs change. It always starts from the
-original, so running it twice is harmless. Needs ffmpeg and ffprobe on the PATH.
+Run it again whenever triggerTimeMs, playbackSpeed or slowDurationMs change, and upload the result: the app
+streams whatever source_vid points at, so a video built for an older script stutters in the new slow phases.
+It always starts from the original, so running it twice is harmless. Needs ffmpeg and ffprobe on the PATH.
 """
 
 import json
@@ -38,7 +39,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MINTERPOLATE = "mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1"
 
 # Re-encoding is unavoidable (frames are added). Two passes at the source's own bitrate, plus a margin for
-# the added frames, keep the APK the size it was: a CRF encode of this already-compressed gameplay came out
+# the added frames, keep the upload the size it was: a CRF encode of this already-compressed gameplay came out
 # at twice the source's size even at CRF 20, and was still larger at CRF 27.
 X264 = ["-c:v", "libx264", "-preset", "slow", "-profile:v", "high", "-pix_fmt", "yuv420p"]
 BITRATE_MARGIN = 1.1
@@ -55,8 +56,8 @@ def main() -> None:
         sys.exit(__doc__)
     demo_id = sys.argv[1]
     source = ROOT / "demo-sources" / demo_id / "video.mp4"
-    script = ROOT / "app/src/main/assets/demos" / demo_id / "script.json"
-    target = ROOT / "app/src/main/assets/demos" / demo_id / "video.mp4"
+    script = ROOT / "demo-sources" / demo_id / "script.json"
+    target = ROOT / "demo-sources" / demo_id / "video-interpolated.mp4"
     for tool in ("ffmpeg", "ffprobe"):
         if shutil.which(tool) is None:
             sys.exit(f"{tool} is not on the PATH (brew install ffmpeg)")
@@ -67,7 +68,7 @@ def main() -> None:
     fps, frame_count, bitrate, width, height = probe_video(source)
     segments = merge(slow_segments(json.loads(script.read_text()), fps, frame_count))
     if not segments:
-        # Nothing slows down any more: the packaged video must not keep frames for phases that are gone.
+        # Nothing slows down any more: the uploaded video must not keep frames for phases that are gone.
         shutil.copyfile(source, target)
         print(f"script.json has no slow phase; copied the original to {target.relative_to(ROOT)}")
         return
