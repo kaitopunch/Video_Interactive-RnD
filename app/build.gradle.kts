@@ -12,6 +12,15 @@ val releaseKeystore = Properties().apply {
     rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
 }
 
+// The store catalogue's X-API-Key (confirm.md H5): local.properties, which is never committed, or the environment
+// on a machine without one. Missing, the build still succeeds and Home shows its "could not load" message: the
+// server answers 404 to a request without the key.
+val catalogueApiKey: String = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}.getProperty("CATALOGUE_API_KEY") ?: System.getenv("CATALOGUE_API_KEY") ?: "".also {
+    logger.warn("CATALOGUE_API_KEY is not set in local.properties or the environment: Home will not load any game")
+}
+
 android {
     namespace = "com.pion.psremote"
     compileSdk { version = release(37) }
@@ -23,6 +32,7 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "CATALOGUE_API_KEY", "\"$catalogueApiKey\"")
     }
 
     signingConfigs {
@@ -63,7 +73,7 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true // Media3VideoPlayback attaches its EventLogger in debug builds only
+        buildConfig = true // the catalogue key; and Media3VideoPlayback attaches its EventLogger in debug builds only
     }
 
     // Compose UI suites that hold on any screen run twice from one source: on the JVM under Robolectric
@@ -74,8 +84,8 @@ android {
     }
 
     testOptions {
-        // Robolectric reads the merged resources, assets and manifest: the suites resolve real strings, list the
-        // real demo folders, and launch ui-test-manifest's ComponentActivity.
+        // Robolectric reads the merged resources and manifest: the suites resolve real strings and launch
+        // ui-test-manifest's ComponentActivity.
         unitTests.isIncludeAndroidResources = true
         // Real text measurement (LEGACY graphics measures every glyph as 1 px), so a label that overflows its
         // button fails on the JVM as it would on a phone.
@@ -105,6 +115,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.guava)
+    implementation(libs.okhttp)
     implementation(libs.androidx.profileinstaller)
     implementation(libs.androidx.tracing.ktx)
 
