@@ -3,6 +3,8 @@ package com.pion.psremote.feature.home
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -34,13 +36,13 @@ class HomeScreenTest {
     }
 
     @Test
-    fun everyBundledGameIsACardThatOpensIt() {
-        show(HomePhase.Ready(listOf(DemoSummary.fromId("sample"), DemoSummary.fromId("spiderman"))))
+    fun everyListedGameIsACardThatOpensIt() {
+        show(HomePhase.Ready(listOf(SAMPLE, SPIDER_MAN)))
 
-        compose.onNodeWithText("Spiderman").performClick()
+        compose.onNodeWithText("Spider Man").performClick()
         compose.onNodeWithText("Sample").performClick()
 
-        assertEquals(listOf(HomeIntent.DemoClicked("spiderman"), HomeIntent.DemoClicked("sample")), intents)
+        assertEquals(listOf(HomeIntent.DemoClicked(SPIDER_MAN.id), HomeIntent.DemoClicked(SAMPLE.id)), intents)
     }
 
     @Test
@@ -52,23 +54,29 @@ class HomeScreenTest {
     }
 
     @Test
-    fun noBundledGameSaysHowToAddOne() {
+    fun anEmptyCatalogueSaysSoAndOffersRetry() {
         show(HomePhase.Empty)
 
         compose.onNodeWithText(string(R.string.home_empty)).assertIsDisplayed()
+        compose.onNode(hasText(string(R.string.action_retry)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(HomeIntent.RetryClicked), intents)
     }
 
     @Test
-    fun anUnreadableListSaysSo() {
-        show(HomePhase.Failed(AppError.NotFound("demos")))
+    fun aFailedFetchSaysSoAndOffersRetry() {
+        show(HomePhase.Failed(AppError.Network("UnknownHostException")))
 
         compose.onNodeWithText(string(R.string.home_failed)).assertIsDisplayed()
+        compose.onNode(hasText(string(R.string.action_retry)) and hasClickAction()).performClick()
+
+        assertEquals(listOf(HomeIntent.RetryClicked), intents)
     }
 
-    /** A title is a folder name (LLM.md §11 #5), and a long one must not push the card's layout around. */
+    /** A title is whatever the CMS holds, and a long one must not push the card's layout around. */
     @Test
     fun aLongGameTitleStaysOnOneLine() {
-        val title = DemoSummary.fromId("marvels-spider-man-2-ultimate-edition-remastered-collection").title
+        val title = "Marvel's Spider-Man 2 Ultimate Edition Remastered Collection"
         show(HomePhase.Ready(listOf(DemoSummary("long", title))))
 
         assertEquals(1, compose.onNodeWithText(title).textLayout().lineCount)
@@ -76,7 +84,7 @@ class HomeScreenTest {
 
     @Test
     fun aLongListScrollsToItsLastGame() {
-        val demos = List(GAMES) { DemoSummary.fromId("game-${it + 1}") }
+        val demos = List(GAMES) { DemoSummary("game-${it + 1}", "Game ${it + 1}") }
         show(HomePhase.Ready(demos))
 
         compose.onNode(hasScrollToIndexAction()).performScrollToIndex(GAMES - 1)
@@ -87,5 +95,7 @@ class HomeScreenTest {
 
     private companion object {
         const val GAMES = 30
+        val SAMPLE = DemoSummary("6ef63378-d525-4633-a244-2ea68bf3ef19", "Sample")
+        val SPIDER_MAN = DemoSummary("371ed659-b6b5-436c-b9ad-ad41da4ae797", "Spider Man")
     }
 }

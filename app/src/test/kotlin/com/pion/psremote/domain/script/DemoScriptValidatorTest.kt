@@ -4,33 +4,12 @@ import com.pion.psremote.domain.model.ControllerButton
 import com.pion.psremote.domain.model.InputMode
 import com.pion.psremote.domain.model.ScriptViolation
 import com.pion.psremote.domain.model.TutorialStep
-import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DemoScriptValidatorTest {
     private val step = TutorialStep(1, 34_000, listOf(ControllerButton.CROSS), InputMode.SEQUENCE, 0.25, 3_000)
-
-    /**
-     * Every game on the home list, not only the sample: a broken script fails the build, not the demo.
-     * The JVM cannot read an MP4's length, so each one is written here — a new folder without its entry
-     * fails until someone adds it.
-     */
-    @Test
-    fun `every shipped demo script is valid for its video`() {
-        val ids = File("src/main/assets/demos").listFiles { file -> file.isDirectory }.orEmpty().map { it.name }
-        assertTrue("no demo folder found", ids.isNotEmpty())
-
-        for (id in ids.sorted()) {
-            val durationMs = requireNotNull(SHIPPED_VIDEO_DURATIONS_MS[id]) {
-                "Add demos/$id to SHIPPED_VIDEO_DURATIONS_MS: " +
-                    "ffprobe -v error -show_entries format=duration -of csv=p=0 video.mp4, in ms"
-            }
-            val parsed = DemoScriptParser.parse(File("src/main/assets/demos/$id/script.json").readText())
-            assertEquals("demos/$id", emptyList<ScriptViolation>(), DemoScriptValidator.validate(parsed, durationMs))
-        }
-    }
 
     @Test
     fun `sequence zero is rejected`() {
@@ -177,12 +156,4 @@ class DemoScriptValidatorTest {
 
     private fun validate(vararg steps: TutorialStep) =
         DemoScriptValidator.validate(ParsedScript(steps.toList(), emptyList()), 70_000)
-
-    private companion object {
-        /** `video.mp4`'s length per folder under `assets/demos/`, from ffprobe, rounded down to the ms. */
-        val SHIPPED_VIDEO_DURATIONS_MS = mapOf(
-            "sample" to 70_000L,
-            "spiderman" to 139_157L,
-        )
-    }
 }

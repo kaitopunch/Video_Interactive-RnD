@@ -1,8 +1,10 @@
 package com.pion.psremote.data.playback
 
 import android.content.Context
+import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.pion.psremote.domain.playback.PlaybackEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,9 +22,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.koin.mp.KoinPlatform
+import java.io.File
 
 /**
- * The real player on the real decoder, against the sample video: what `FakeVideoPlayback` promises the
+ * The real player on the real decoder, against the sample video — bundled in this test APK, since the app
+ * streams its videos (confirm.md H1) — through the app's own cache: what `FakeVideoPlayback` promises the
  * ViewModel suites, checked against Media3. Stops are position cues (LLM.md §12), so the test that matters is
  * where the video actually is when a cue lands — the measurement LLM.md §9 otherwise takes from `EventLogger`.
  *
@@ -37,7 +42,7 @@ class Media3VideoPlaybackDeviceTest {
 
     @Before
     fun setUp() = onMain {
-        playback = Media3VideoPlayback(ApplicationProvider.getApplicationContext<Context>())
+        playback = Media3VideoPlayback(ApplicationProvider.getApplicationContext<Context>(), cache)
         collector = CoroutineScope(Dispatchers.Main).launch { playback.events.collect { events.send(it) } }
         playback.prepare(SAMPLE)
         assertEquals(PlaybackEvent.Prepared, next())
@@ -131,7 +136,7 @@ class Media3VideoPlaybackDeviceTest {
 
     @Test
     fun releaseEndsTheEventStream() = runBlocking {
-        val other = withContext(Dispatchers.Main) { Media3VideoPlayback(ApplicationProvider.getApplicationContext()) }
+        val other = withContext(Dispatchers.Main) { Media3VideoPlayback(ApplicationProvider.getApplicationContext(), cache) }
         val drained = CoroutineScope(Dispatchers.Main).launch { other.events.toList() }
         withContext(Dispatchers.Main) { other.release() }
 
@@ -145,7 +150,21 @@ class Media3VideoPlaybackDeviceTest {
     private fun onMain(block: suspend CoroutineScope.() -> Unit) = runBlocking { withContext(Dispatchers.Main, block) }
 
     private companion object {
-        const val SAMPLE = "asset:///demos/sample/video.mp4"
+        /** The app's own: a second `SimpleCache` on the same folder throws (`VideoCache`). */
+        val cache: VideoCache get() = KoinPlatform.getKoin().get()
+
+        /**
+         * `sample.mp4` from this test APK's assets, copied where the app's player can open it: an `asset://` URI
+         * resolves against the app's assets, which hold no video any more.
+         */
+        val SAMPLE: String by lazy {
+            val file = File(ApplicationProvider.getApplicationContext<Context>().cacheDir, "sample.mp4")
+            if (!file.exists()) {
+                InstrumentationRegistry.getInstrumentation().context.assets.open("sample.mp4")
+                    .use { input -> file.outputStream().use { input.copyTo(it) } }
+            }
+            Uri.fromFile(file).toString()
+        }
         const val CUE_MS = 1_000L
         const val TIMEOUT_MS = 10_000L
         const val QUIET_MS = 1_500L
