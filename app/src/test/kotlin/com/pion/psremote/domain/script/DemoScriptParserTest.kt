@@ -52,6 +52,61 @@ class DemoScriptParserTest {
     }
 
     @Test
+    fun `an empty array has no steps and nothing wrong with its structure`() {
+        assertEquals(ParsedScript(emptyList(), emptyList()), DemoScriptParser.parse("[]"))
+    }
+
+    @Test
+    fun `an empty or blank script is not a JSON array`() {
+        listOf("", "   ", "\n\t").forEach { json ->
+            val parsed = DemoScriptParser.parse(json)
+
+            assertTrue(parsed.steps.isEmpty())
+            assertTrue("'$json'", parsed.violations.single() is ScriptViolation.NotAJsonArray)
+        }
+    }
+
+    @Test
+    fun `a JSON null is not an array`() {
+        assertRejected("null", ScriptViolation.NotAJsonArray(null))
+    }
+
+    /** The CMS field is itself a string: a script pasted with its own quotes arrives encoded twice. */
+    @Test
+    fun `a script pasted as a quoted string is not an array`() {
+        assertRejected("\"[{\\\"step_sequence\\\":1}]\"", ScriptViolation.NotAJsonArray(null))
+    }
+
+    @Test
+    fun `null and nested array elements report their positions`() {
+        assertRejected("[null,[],\"step\"]",
+            ScriptViolation.StepNotAnObject(0), ScriptViolation.StepNotAnObject(1), ScriptViolation.StepNotAnObject(2))
+    }
+
+    @Test
+    fun `a sequence past the integer range is not an integer`() =
+        assertWrongType("step_sequence", "2147483648", FieldType.INTEGER)
+
+    @Test
+    fun `a trigger past the long range is not an integer`() =
+        assertWrongType("triggerTimeMs", "9223372036854775808", FieldType.INTEGER)
+
+    @Test
+    fun `a speed written as text is not a number`() =
+        assertWrongType("playbackSpeed", "\"0.25\"", FieldType.NUMBER)
+
+    /** Not valid JSON, but the tree reader takes any bare word as a literal: the validator is what must refuse it. */
+    @Test
+    fun `a bare NaN speed is read as a number and left to the validator`() {
+        val fields = validFields().apply { put("playbackSpeed", "NaN") }
+
+        val parsed = DemoScriptParser.parse("[${jsonObject(fields)}]")
+
+        assertTrue(parsed.violations.isEmpty())
+        assertTrue(parsed.steps.single().playbackSpeed.isNaN())
+    }
+
+    @Test
     fun `missing sequence is reported`() = assertMissing("step_sequence")
 
     @Test

@@ -37,6 +37,23 @@ class SlowMotionRampTest {
     }
 
     @Test
+    fun `a target of normal speed holds normal speed throughout`() {
+        assertTrue(SlowMotionRamp.speeds(1f).all { it == 1f })
+    }
+
+    /** A step completed within one tick of appearing: the ramp must not drag the resumed video down even once. */
+    @Test
+    fun `a ramp no longer wanted before its first tick sets no speed at all`() = runTest {
+        val applied = mutableListOf<Float>()
+        launch { SlowMotionRamp.run(0.25f, { false }, applied::add) }
+
+        advanceTimeBy(1_000)
+        runCurrent()
+
+        assertTrue(applied.isEmpty())
+    }
+
+    @Test
     fun `run sets one speed per tick and stops for good once no longer wanted`() = runTest {
         val applied = mutableListOf<Float>()
         var wanted = true

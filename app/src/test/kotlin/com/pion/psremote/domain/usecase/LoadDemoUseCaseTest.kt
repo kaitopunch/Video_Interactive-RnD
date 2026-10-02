@@ -57,6 +57,27 @@ class LoadDemoUseCaseTest {
         )
     }
 
+    /** End to end through the parser: a NaN that reached `stopPositionMs` would throw out of here, not be reported. */
+    @Test
+    fun `a NaN speed comes back as a violation, never as an exception`() = runTest {
+        repository.result = source(
+            """[{"step_sequence":1,"triggerTimeMs":34000,"targetButtonIds":["CROSS"],"playbackSpeed":NaN,"slowDurationMs":3000}]""",
+        )
+
+        val load = (LoadDemoUseCase(repository, StandardTestDispatcher(testScheduler))("sample") as AppResult.Success).value
+
+        assertEquals(listOf(ScriptViolation.SpeedOutOfRange(1, Double.NaN)), (load as DemoLoad.Invalid).violations)
+    }
+
+    @Test
+    fun `a script that is not JSON at all comes back as a violation, never as an exception`() = runTest {
+        repository.result = source("<html>502 Bad Gateway</html>")
+
+        val load = (LoadDemoUseCase(repository, StandardTestDispatcher(testScheduler))("sample") as AppResult.Success).value
+
+        assertTrue((load as DemoLoad.Invalid).violations.single() is ScriptViolation.NotAJsonArray)
+    }
+
     @Test
     fun `a repository failure passes through untouched`() = runTest {
         val failure = AppResult.Failure(AppError.NotFound("demos/sample/video.mp4"))

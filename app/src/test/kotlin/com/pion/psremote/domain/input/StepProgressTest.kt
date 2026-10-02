@@ -166,6 +166,36 @@ class StepProgressTest {
         assertEquals(progress, progress.release(CROSS))
     }
 
+    /** The screen hides a finished step at once, but a press already queued behind the completing one still lands. */
+    @Test
+    fun `a finished step stays finished whatever is pressed after it`() {
+        listOf(InputMode.SEQUENCE, InputMode.ANY_ORDER).forEach { mode ->
+            val done = start(mode, CROSS, R1).press(CROSS).press(R1)
+
+            assertTrue("$mode", done.isComplete)
+            assertEquals("$mode", done, done.press(CROSS).press(R1).press(TRIANGLE))
+            assertEquals("$mode", emptySet<ControllerButton>(), done.activeButtons)
+            assertEquals("$mode", emptySet<ControllerButton>(), done.pendingButtons)
+        }
+    }
+
+    @Test
+    fun `pressing a held simultaneous button again, or one outside the combination, changes nothing`() {
+        val held = start(InputMode.SIMULTANEOUS, L1, R1).press(L1)
+
+        assertEquals(held, held.press(L1))
+        assertEquals(held, held.press(CROSS))
+        assertFalse(held.press(CROSS).isComplete)
+    }
+
+    @Test
+    fun `a button the step does not name has no place and owes no press`() {
+        val progress = start(InputMode.SEQUENCE, CROSS, R1)
+
+        assertNull(progress.nextPositionOf(TRIANGLE))
+        assertEquals(0, progress.remainingPresses(TRIANGLE))
+    }
+
     private fun start(mode: InputMode, vararg targets: ControllerButton) =
         StepProgress.start(TutorialStep(1, 34_000, targets.toList(), mode, 0.25, 3_000))
 }

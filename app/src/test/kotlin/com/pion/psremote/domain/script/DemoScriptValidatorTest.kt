@@ -17,6 +17,70 @@ class DemoScriptValidatorTest {
     }
 
     @Test
+    fun `a negative sequence is rejected`() {
+        assertEquals(listOf(ScriptViolation.SequenceBelowOne(-3)), validate(step.copy(sequence = -3)))
+    }
+
+    @Test
+    fun `speed exactly one is accepted`() {
+        assertTrue(validate(step.copy(playbackSpeed = 1.0)).isEmpty())
+    }
+
+    /**
+     * `stopPositionMs` rounds a Double, and `roundToLong` throws on NaN: a NaN that reached the timeline rules would
+     * escape `LoadDemoUseCase` as an exception instead of reaching the BA as a violation.
+     */
+    @Test
+    fun `a NaN or infinite speed is out of range and never reaches the stop arithmetic`() {
+        listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY).forEach { speed ->
+            assertEquals(listOf(ScriptViolation.SpeedOutOfRange(1, speed)), validate(step.copy(playbackSpeed = speed)))
+        }
+    }
+
+    @Test
+    fun `every rule one step breaks is reported, not only the first`() {
+        val broken = TutorialStep(-1, -5, emptyList(), InputMode.SEQUENCE, 0.0, -10)
+
+        assertEquals(
+            listOf(
+                ScriptViolation.SequenceBelowOne(-1),
+                ScriptViolation.NegativeTriggerTime(-1, -5),
+                ScriptViolation.EmptyTargets(-1),
+                ScriptViolation.NegativeSlowDuration(-1, -10),
+                ScriptViolation.ZeroSpeedNeedsZeroDuration(-1, -10),
+            ),
+            validate(broken),
+        )
+    }
+
+    @Test
+    fun `six presses of one button together break both simultaneous rules`() {
+        val crowded = step.copy(targets = List(6) { ControllerButton.CROSS }, inputMode = InputMode.SIMULTANEOUS)
+
+        assertEquals(
+            listOf(
+                ScriptViolation.TooManySimultaneousButtons(1, 6, DemoScriptValidator.MAX_SIMULTANEOUS_BUTTONS),
+                ScriptViolation.RepeatedSimultaneousButton(1, ControllerButton.CROSS),
+            ),
+            validate(crowded),
+        )
+    }
+
+    /** A file the duration read could open but whose length is 0: no stop point can be before its end. */
+    @Test
+    fun `a video with no length rejects every step`() {
+        val parsed = ParsedScript(listOf(step, step.copy(sequence = 2, triggerTimeMs = 40_000)), emptyList())
+
+        assertEquals(
+            listOf(
+                ScriptViolation.StopNotBeforeVideoEnd(1, 34_750, 0),
+                ScriptViolation.StopNotBeforeVideoEnd(2, 40_750, 0),
+            ),
+            DemoScriptValidator.validate(parsed, 0),
+        )
+    }
+
+    @Test
     fun `negative trigger is rejected`() {
         assertEquals(listOf(ScriptViolation.NegativeTriggerTime(1, -1)), validate(step.copy(triggerTimeMs = -1)))
     }
