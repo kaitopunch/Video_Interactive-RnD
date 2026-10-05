@@ -9,6 +9,7 @@ imports `tool`, `step` and `expected_times` from this file.
 import contextlib
 import importlib.util
 import io
+import itertools
 import json
 import subprocess
 import sys
@@ -165,7 +166,7 @@ class H264LevelTest(ToolTest):
 
 class ProbeVideoTest(ToolTest):
     STREAM = {"r_frame_rate": "30/1", "avg_frame_rate": "30/1", "nb_frames": "120", "start_time": "0.000000",
-              "bit_rate": "140586", "width": 160, "height": 120}
+              "start_pts": 0, "time_base": "1/15360", "bit_rate": "140586", "width": 160, "height": 120}
 
     def probe(self, **overrides):
         stream = {**self.STREAM, **overrides}
@@ -173,17 +174,23 @@ class ProbeVideoTest(ToolTest):
             return tool.probe_video(Path("video.mp4"))
 
     def test_a_constant_rate_video_starting_at_0(self):
-        self.assertEqual((Fraction(30), 120, 140586, 160, 120), self.probe())
+        self.assertEqual((Fraction(30), 120, 140586, 160, 120, 0), self.probe())
 
     def test_an_ntsc_rate_is_kept_exact(self):
         fps, *_ = self.probe(r_frame_rate="30000/1001", avg_frame_rate="30000/1001")
         self.assertEqual(NTSC, fps)
 
     def test_a_variable_rate_video_is_refused(self):
-        self.assertExits("must be constant frame rate starting at 0", self.probe, avg_frame_rate="55/2")
+        self.assertExits("must be constant frame rate starting within 0.1 s of 0", self.probe, avg_frame_rate="55/2")
 
-    def test_a_video_not_starting_at_0_is_refused(self):
-        self.assertExits("start=0.500000", self.probe, start_time="0.500000")
+    def test_a_first_frame_up_to_a_tenth_of_a_second_off_0_is_taken_at_its_exact_time(self):
+        # the B-frame delay of the BA's spiderman2: 507 ticks of 1/15360 s, which ffprobe prints rounded as 0.033008
+        self.assertEqual(Fraction(507, 15360), self.probe(start_pts=507, start_time="0.033008").start)
+        self.assertEqual(Fraction(-1, 10), self.probe(start_pts=-1536, start_time="-0.100000").start)
+
+    def test_a_video_starting_further_from_0_is_refused(self):
+        self.assertExits("start=0.500000", self.probe, start_pts=7680, start_time="0.500000")
+        self.assertExits("start=0.100065", self.probe, start_pts=1537, start_time="0.100065")
 
 
 class CheckTest(ToolTest):
@@ -196,10 +203,8 @@ class CheckTest(ToolTest):
             tool.check(Path("video.mp4"), segments, fps, frame_count)
         return printed.getvalue()
 
-    def test_the_expected_frames_pass_and_each_segment_is_reported(self):
-        printed = self.check(expected_times(FPS, 120, self.SEGMENTS))
-        self.assertIn("1000-1500    ms  4x  +45 frames", printed)
-        self.assertIn("2000-2333    ms  2x  +10 frames", printed)
+    def test_the_expected_frames_pass_silently(self):
+        self.assertEqual("", self.check(expected_times(FPS, 120, self.SEGMENTS)))
 
     def test_timestamps_rounded_to_the_mp4_timescale_still_pass(self):
         segments = [[29, 42, 3]]
@@ -227,18 +232,50 @@ class CheckTest(ToolTest):
         self.assertExits("a source frame is missing or has moved", self.check, times + [120 / 30])
 
 
+class FakeFfmpeg:
+    """subprocess.Popen as run() uses it: progress lines on stdout, an error written to stderr, an exit code."""
+
+    def __init__(self, lines=(), error=b"", code=0):
+        self.lines, self.error, self.returncode, self.commands = lines, error, code, []
+
+    def __call__(self, command, stdout, stderr, text):
+        self.commands.append(command)
+        stderr.write(self.error)
+        self.stdout = iter(self.lines)
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *failure):
+        return False
+
+
 class SubprocessTest(ToolTest):
-    def test_run_quiets_ffmpeg_and_overwrites(self):
-        calls = []
-        done = lambda command, **kwargs: calls.append(command) or subprocess.CompletedProcess(command, 0, "", "")
-        with mock.patch.object(tool.subprocess, "run", done):
+    def test_run_quiets_ffmpeg_overwrites_and_passes_on_the_frame_counts_it_reports(self):
+        ffmpeg = FakeFfmpeg(["frame=0\n", "fps=0.00\n", "progress=continue\n", "frame=12\n", "progress=end\n"])
+        counts = []
+        with mock.patch.object(tool.subprocess, "Popen", ffmpeg):
+            tool.run(["ffmpeg", "-i", "in.mp4", "out.mp4"], counts.append)
             tool.run(["ffmpeg", "-i", "in.mp4", "out.mp4"])
-        self.assertEqual([["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", "in.mp4", "out.mp4"]], calls)
+        self.assertEqual(["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostats", "-progress", "pipe:1", "-y",
+                          "-i", "in.mp4", "out.mp4"], ffmpeg.commands[0])
+        self.assertEqual([0, 12], counts)
+
+    def test_an_interrupted_run_stops_ffmpeg(self):
+        ffmpeg = FakeFfmpeg(["frame=1\n"])
+        ffmpeg.kill = lambda: setattr(ffmpeg, "killed", True)
+
+        def interrupted(count):
+            raise KeyboardInterrupt
+
+        with mock.patch.object(tool.subprocess, "Popen", ffmpeg), self.assertRaises(KeyboardInterrupt):
+            tool.run(["ffmpeg", "-i", "in.mp4", "out.mp4"], interrupted)
+        self.assertTrue(ffmpeg.killed)
 
     def test_a_failed_run_exits_with_ffmpeg_s_error(self):
-        failed = lambda command, **kwargs: subprocess.CompletedProcess(command, 1, "", "Invalid data found")
-        with mock.patch.object(tool.subprocess, "run", failed):
-            self.assertExits("ffmpeg -copyts -i... failed:\nInvalid data found",
+        with mock.patch.object(tool.subprocess, "Popen", FakeFfmpeg(error="Invalid data found ü".encode(), code=1)):
+            self.assertExits("ffmpeg -copyts -i... failed:\nInvalid data found ü",
                              tool.run, ["ffmpeg", "-copyts", "-i", "in.mp4", "out.mp4"])
 
     def test_ffprobe_reads_the_entries_as_json(self):
@@ -249,16 +286,42 @@ class SubprocessTest(ToolTest):
         self.assertEqual([["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width",
                            "-of", "json", "in.mp4"]], calls)
 
+    def test_a_source_starting_at_0_is_read_as_it_is_and_one_starting_later_is_moved_to_0(self):
+        self.assertEqual(["-copyts", "-i", "in.mp4"], tool.source_input(Path("in.mp4"), Fraction(0)))
+        self.assertEqual(["-copyts", "-itsoffset", "-0.033008", "-i", "in.mp4"],
+                         tool.source_input(Path("in.mp4"), Fraction(507, 15360)))
+
     def test_the_command_line_without_a_demo_id_prints_the_usage(self):
         result = subprocess.run([sys.executable, str(TOOL_PATH)], capture_output=True, text=True)
         self.assertEqual(1, result.returncode)
         self.assertIn("python3 tools/interpolate-slow-segments.py <demo-id>", result.stderr)
 
 
+class StampTest(ToolTest):
+    def read(self, tags):
+        answer = {"format": {"tags": tags}} if tags is not None else {"format": {}}
+        with mock.patch.object(tool, "ffprobe", lambda path, select, entries: answer):
+            return tool.read_stamp(Path("video-interpolated.mp4"))
+
+    def test_the_stamp_names_the_source_by_its_hash_and_the_segments_built(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            source = Path(scratch) / "video.mp4"
+            source.write_bytes(b"original")
+            text = tool.stamp(source, [[30, 45, 4]])
+        self.assertTrue(text.startswith(tool.STAMP_PREFIX))
+        self.assertEqual({"source_sha256": "0682c5f2076f099c34cfdd15a9e063849ed437a49677e6fcc5b4198c76575be5",
+                          "segments": [[30, 45, 4]]}, self.read({"comment": text}))
+
+    def test_an_output_without_the_tool_s_stamp_has_none(self):
+        for tags in (None, {}, {"comment": "made in an editor"}, {"comment": tool.STAMP_PREFIX + "{broken"}):
+            with self.subTest(tags=tags):
+                self.assertIsNone(self.read(tags))
+
+
 class MainTest(ToolTest):
     """main() in a scratch ROOT, with ffprobe and every ffmpeg run replaced by fakes."""
 
-    PROBE = (FPS, 120, 100000, 160, 120)
+    PROBE = tool.Video(FPS, 120, 100000, 160, 120, Fraction(0))
 
     def setUp(self):
         scratch = tempfile.TemporaryDirectory()
@@ -273,23 +336,25 @@ class MainTest(ToolTest):
     def write_script(self, *steps):
         (self.demo / "script.json").write_text(json.dumps(list(steps)))
 
-    def main(self, *args, probe=PROBE, check=None, which=lambda name: f"/usr/bin/{name}"):
-        def interpolate(source, segment, fps, out):
+    def main(self, *args, probe=PROBE, check=None, which=lambda name: f"/usr/bin/{name}", root=None, call=None):
+        def interpolate(source, segment, fps, start, out):
             out.write_bytes(b"part")
-            self.calls.setdefault("interpolate", []).append((segment, out.name))
+            self.calls.setdefault("interpolate", []).append((segment, start, out.name))
             return out
 
-        def assemble(source, segments, parts, bitrate, level, work, out):
+        def assemble(source, start, segments, parts, bitrate, level, stamp_text, work, out, encoded):
             self.assertTrue(all(part.is_file() for part in parts))
             out.write_bytes(b"interpolated")
-            self.calls["assemble"] = (segments, bitrate, level)
+            self.calls["assemble"] = (start, segments, bitrate, level, stamp_text)
+            encoded(1, tool.output_frames(segments, probe.frame_count) // 2)
+            encoded(2, 10 ** 6)  # x264 counts no more than it writes; a share past the whole is held at the whole
 
         def fake_check(out, segments, fps, frame_count):
             self.calls["check"] = (out.read_bytes(), segments, fps, frame_count)
             if check:
                 check()
 
-        with mock.patch.object(tool, "ROOT", self.root), \
+        with mock.patch.object(tool, "ROOT", root or self.root), \
                 mock.patch.object(tool.shutil, "which", which), \
                 mock.patch.object(sys, "argv", ["interpolate-slow-segments.py", *args]), \
                 mock.patch.object(tool, "probe_video", lambda path: probe), \
@@ -297,7 +362,7 @@ class MainTest(ToolTest):
                 mock.patch.object(tool, "assemble", assemble), \
                 mock.patch.object(tool, "check", fake_check), \
                 contextlib.redirect_stdout(io.StringIO()) as printed:
-            tool.main()
+            (call or tool.main)()
         return printed.getvalue()
 
     def test_anything_but_one_demo_id_prints_the_usage(self):
@@ -340,11 +405,45 @@ class MainTest(ToolTest):
         self.write_script(step(1500, 0.25, 1000), step(1000, 0.5, 1000), step(3000, 0.5, 600))
         printed = self.main("demo")
         segments = [[30, 53, 4], [90, 99, 2]]  # 1000-1500 ms at 2x and 1500-1750 ms at 4x touch
-        self.assertEqual([(segments[0], "segment-0.nut"), (segments[1], "segment-1.nut")], self.calls["interpolate"])
-        self.assertEqual((segments, 110000, "3.1"), self.calls["assemble"])  # bitrate + 10 %, 160x120 at 120 fps
+        self.assertEqual([(segments[0], 0, "segment-0.nut"), (segments[1], 0, "segment-1.nut")],
+                         self.calls["interpolate"])
+        stamp = tool.stamp(self.demo / "video.mp4", segments)
+        self.assertEqual((0, segments, 110000, "3.1", stamp), self.calls["assemble"])  # bitrate + 10 %, 120 fps peak
         self.assertEqual((b"interpolated", segments, FPS, 120), self.calls["check"])
         self.assertEqual(b"interpolated", self.target.read_bytes())
+        self.assertIn("    1000-1767    ms  4x  +69 frames", printed)
+        self.assertIn("    3000-3300    ms  2x  +9 frames", printed)
         self.assertIn("wrote demo-sources/demo/video-interpolated.mp4", printed)
+
+    def test_a_source_starting_after_0_is_moved_to_0_in_every_ffmpeg_run(self):
+        self.write_script(step(1000, 0.25, 2000))
+        start = Fraction(507, 15360)
+        self.main("demo", probe=self.PROBE._replace(start=start))
+        self.assertEqual(start, self.calls["interpolate"][0][1])
+        self.assertEqual(start, self.calls["assemble"][0])
+
+    def test_build_reports_each_stage_s_share_of_the_work_and_takes_a_folder_outside_the_repo(self):
+        self.write_script(step(1000, 0.25, 2000), step(3000, 0.5, 600))
+        ticks, lines = [], []
+        self.main(root=self.root / "repo", call=lambda: tool.build(self.demo, lines.append, lambda *t: ticks.append(t)))
+        segments = [segment for segment, _, _ in self.calls["interpolate"]]
+        w = tool.stage_weights(segments, 120, 160 * 120)
+        at = [0, *itertools.accumulate(w)]
+        self.assertEqual([(0, at[5], ("interpolate", 1, 2)),
+                          (at[1], at[5], ("interpolate", 2, 2)),
+                          (at[2], at[5], ("encode", 1, 2)),
+                          (at[2] + w[2] / 2, at[5], ("encode", 1, 2)),  # 87 of the 174 frames
+                          (at[4], at[5], ("encode", 2, 2)),  # each stage ends exactly where the next one starts
+                          (at[4], at[5], ("check", 1, 1)),
+                          (at[5], at[5], ("check", 1, 1))], ticks)
+        self.assertEqual(f"wrote {self.target} (0.0 MB, source 0.0 MB)", lines[-1])
+
+    def test_progress_weighs_a_stage_by_the_frames_it_decodes_makes_and_encodes(self):
+        far, near = tool.stage_weights([[0, 10, 4], [600, 610, 4]], 1200, 10 ** 6)[:2]
+        self.assertAlmostEqual(600 * tool.SEEK_COST, near - far)  # trim decodes every frame before a segment
+        self.assertAlmostEqual(12 * 4 * tool.INTERPOLATE_COST, far)
+        passes = tool.stage_weights([[0, 10, 4]], 1200, 2 * 10 ** 6)[1:]
+        self.assertEqual([2 * cost * 1230 for cost in (*tool.PASS_COSTS, tool.CHECK_COST)], passes)
 
     def test_a_failed_check_leaves_the_previous_output_untouched(self):
         self.write_script(step(1000, 0.25, 2000))
@@ -355,7 +454,7 @@ class MainTest(ToolTest):
 
     def test_a_frame_too_large_for_h264_is_refused_before_any_ffmpeg_run(self):
         self.write_script(step(1000, 0.25, 2000))
-        self.assertExits("beyond H.264 level 5.2", self.main, "demo", probe=(FPS, 120, 100000, 3840, 2160))
+        self.assertExits("beyond H.264 level 5.2", self.main, "demo", probe=self.PROBE._replace(width=3840, height=2160))
         self.assertNotIn("interpolate", self.calls)
         self.assertFalse(self.target.exists())
 

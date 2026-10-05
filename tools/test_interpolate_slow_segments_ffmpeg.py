@@ -67,6 +67,10 @@ class EndToEndTest(unittest.TestCase):
     NTSC_SCRIPT = [step(1000, 0.4, 1000)]
     NTSC_SEGMENTS = [[29, 42, 3]]
 
+    # 60 fps whose first frame is 33 ms in, as the BA's spiderman2 is: 500-750 ms is frames 30 to 45
+    LATE_SCRIPT = [step(500, 0.25, 1000)]
+    LATE_SEGMENTS = [[30, 45, 4]]
+
     @classmethod
     def setUpClass(cls):
         scratch = tempfile.TemporaryDirectory()
@@ -74,7 +78,8 @@ class EndToEndTest(unittest.TestCase):
         cls.root = Path(scratch.name)
         cls.demo("main", cls.SCRIPT)
         cls.demo("ntsc", cls.NTSC_SCRIPT, "30000/1001", 3, False)
-        for demo_id in ("main", "ntsc"):
+        cls.demo("late", cls.LATE_SCRIPT, "60", 2, True, extra=["-output_ts_offset", "0.033"])
+        for demo_id in ("main", "ntsc", "late"):
             cls.run_tool(demo_id)
 
     @classmethod
@@ -173,6 +178,33 @@ class EndToEndTest(unittest.TestCase):
         self.run_tool("plain")
         self.assertEqual((folder / "video.mp4").read_bytes(), (folder / "video-interpolated.mp4").read_bytes())
 
+    def test_a_source_starting_33_ms_late_is_moved_to_0_with_its_audio(self):
+        source, output = self.paths("late")
+        self.assertAlmostEqual(0.033, float(tool.probe_video(source).start), delta=0.001)
+        self.assertSegments("late", self.LATE_SCRIPT, self.LATE_SEGMENTS)
+        self.assertTimestamps("late", self.LATE_SEGMENTS)
+        self.assertSourcePictures("late")
+        self.assertEqual(audio_md5(source), audio_md5(output))
+
+    def test_the_output_names_its_source_and_segments(self):
+        for demo_id, segments in (("main", self.SEGMENTS), ("late", self.LATE_SEGMENTS)):
+            with self.subTest(demo_id=demo_id):
+                source, output = self.paths(demo_id)
+                self.assertEqual({"source_sha256": tool.sha256(source), "segments": segments}, tool.read_stamp(output))
+
+    def test_a_build_reports_its_progress_from_ffmpeg_s_own_frame_counter(self):
+        folder = self.demo("progress", [step(500, 0.25, 1000)], "30", 2, False)  # frames 15-23 at 4x: 60 + 24 frames
+        ticks = []
+        tool.build(folder, report=lambda line: None, progress=lambda *tick: ticks.append(tick))
+        w = tool.stage_weights([[15, 23, 4]], 60, 160 * 120)
+        for pass_number in (1, 2):  # x264 said frame=84 at the end of each pass
+            last = [done for done, _, stage in ticks if stage == ("encode", pass_number, 2)][-1]
+            self.assertAlmostEqual(sum(w[:pass_number + 1]), last)
+        done = [tick[0] for tick in ticks]
+        self.assertEqual(sorted(done), done)
+        self.assertEqual(0, done[0])
+        self.assertAlmostEqual(sum(w), done[-1])
+
     def test_a_variable_rate_source_or_one_not_starting_at_0_is_refused_and_nothing_is_written(self):
         sources = {"vfr": ["-vf", "select='not(between(n,10,14))'", "-fps_mode", "passthrough"],
                    "offset": ["-output_ts_offset", "0.5"]}
@@ -181,7 +213,7 @@ class EndToEndTest(unittest.TestCase):
                 folder = self.demo(demo_id, [step(500, 0.25, 1000)], "30", 2, False, extra=extra)
                 with self.assertRaises(SystemExit) as raised:
                     self.run_tool(demo_id)
-                self.assertIn("must be constant frame rate starting at 0", str(raised.exception.code))
+                self.assertIn("must be constant frame rate starting within 0.1 s of 0", str(raised.exception.code))
                 self.assertFalse((folder / "video-interpolated.mp4").exists())
 
 
