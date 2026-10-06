@@ -2,7 +2,6 @@ package com.pion.psremote.domain.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
 
@@ -37,13 +36,11 @@ class ControllerButtonTest {
 
     /**
      * The BA writes scripts from that table: an id missing there is a button nobody uses, an extra one an error.
-     * Skipped where `docs/` is absent — it is not in git (`.gitignore`), so a clean checkout has no table to check.
+     * The doc is in git beside the BA's tool, so a checkout without it fails here rather than skipping.
      */
     @Test
     fun `the script format doc lists exactly the ids the app reads`() {
-        val doc = File("../docs/demo-script-format.md")
-        assumeTrue("${doc.path} is not in this checkout", doc.exists())
-        val section = doc.readText()
+        val section = File("../tools/demo-script-format.md").readText()
             .substringAfter("## ID các nút")
             .substringBefore("\n## ")
 
