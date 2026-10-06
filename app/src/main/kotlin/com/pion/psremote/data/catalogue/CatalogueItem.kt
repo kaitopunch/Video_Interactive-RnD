@@ -29,7 +29,7 @@ data class CatalogueItem(
 
 @Serializable
 data class CustomFields(
-    /** The demo script — the JSON array `docs/demo-script-format.md` describes — as a string. */
+    /** The demo script — the JSON array `tools/demo-script-format.md` describes — as a string. */
     val json: String? = null,
     /** The video's URL: the output of `tools/interpolate-slow-segments.py`, uploaded (confirm.md H7). */
     @SerialName("source_vid") val sourceVid: String? = null,

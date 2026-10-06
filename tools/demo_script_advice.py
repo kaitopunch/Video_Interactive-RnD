@@ -1,4 +1,4 @@
-"""The warnings demo-assets.py adds to the app's errors: what the app plays but docs/demo-script-format.md advises
+"""The warnings demo-assets.py adds to the app's errors: what the app plays but tools/demo-script-format.md advises
 against, and fields the app skips without a word. None of them stops a demo from playing.
 """
 
@@ -9,7 +9,7 @@ from demo_script_rules import FIELDS, LEGACY_TARGETS, ScriptCheck, Step
 
 DROPPED_PAUSE = "pauseTimeMs"  # confirm.md Q6: the app computes the stop itself
 
-# docs/demo-script-format.md, "Tính điểm": under 250 ms of slow video the PERFECT window is shorter than a reaction;
+# tools/demo-script-format.md, "Tính điểm": under 250 ms of slow video the PERFECT window is shorter than a reaction;
 # under about 100 the video is already waiting when the tutorial appears (LLM.md §11 #11).
 ADVISED_SLOW_WINDOW_MS, WAITING_SLOW_WINDOW_MS = 250, 100
 COMFORTABLE_SIMULTANEOUS_BUTTONS = 2  # two thumbs

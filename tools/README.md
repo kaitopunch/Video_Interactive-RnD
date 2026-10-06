@@ -39,7 +39,7 @@ demo-sources/
 
 - Thư mục để ở đâu cũng được. Tên thư mục do BA tự đặt.
 - Lệnh `build` tạo thêm file `video-interpolated.mp4` trong cùng thư mục.
-- Định dạng kịch bản xem ở `docs/demo-script-format.md`. Tóm tắt: file là **một mảng** `[ ... ]` các bước, không bọc
+- Định dạng kịch bản xem ở [`demo-script-format.md`](demo-script-format.md), cùng thư mục `tools/`. Tóm tắt: file là **một mảng** `[ ... ]` các bước, không bọc
   trong object kiểu `{"scriptId": ..., "steps": [...]}`.
 
 ## 3. Chạy
