@@ -1,6 +1,6 @@
 # Xác nhận yêu cầu — Demo Interactive Video Gameplay
 
-- **Nguồn yêu cầu:** [README.md](README.md)
+- **Nguồn yêu cầu:** [requirements.md](requirements.md) (tới 2026-10-06 là `README.md`)
 - **Ngày tạo:** 2026-09-29
 - **Trạng thái:** Đã chốt, đã triển khai (2026-09-29). Cách hiểu các câu còn trống hoặc mơ hồ nằm ở mục E.
 
@@ -22,7 +22,7 @@ Câu nào chưa trả lời thì chưa được triển khai phần phụ thuộ
 Cần share file cho tài khoản Figma đã kết nối, hoặc export PNG màn demo. Nếu không có, tôi không biết vị trí nút, kiểu highlight và nội dung tutorial.
 
 **Trả lời:**
-- [v] Đã share quyền
+- [x] Đã share quyền
 - [ ] Sẽ gửi PNG
 - Ý kiến khác:
 
@@ -248,8 +248,8 @@ Các câu dưới đây còn để trống hoặc có thể hiểu theo nhiều 
 | E7 (Q14) | Có cả EN và VI, ngôn ngữ đi theo ngôn ngữ của máy: máy đặt tiếng Việt thì hiện VI, còn lại hiện EN. | |
 | E8 (D2) | Nút Thoát vẫn bấm được khi lớp tối đang hiện, để user không bị kẹt ở một bước. | |
 | E9 (D6) | Dialog đếm ngược 5 giây cũng hiện khi video đang dừng chờ thao tác. Dialog không hiện nếu app xuống nền trước khi video bắt đầu phát, hoặc sau khi demo đã kết thúc. | |
-| E11 (README §4) | README cho phép `playbackSpeed` bất kỳ trong khoảng từ 0 đến 1. App chặn các giá trị nhỏ hơn 0.1 (trừ 0), vì nhiều máy không phát được audio ở tốc độ thấp như vậy: tốc độ sẽ không đổi và video dừng sớm. | |
-| E12 (README §5) | Các bước không cần xếp theo thứ tự trong file: app sắp xếp theo `step_sequence`. Nếu BA muốn app báo lỗi khi file xếp sai thứ tự, ghi vào đây. | |
+| E11 (requirements.md §4) | Yêu cầu gốc cho phép `playbackSpeed` bất kỳ trong khoảng từ 0 đến 1. App chặn các giá trị nhỏ hơn 0.1 (trừ 0), vì nhiều máy không phát được audio ở tốc độ thấp như vậy: tốc độ sẽ không đổi và video dừng sớm. | |
+| E12 (requirements.md §5) | Các bước không cần xếp theo thứ tự trong file: app sắp xếp theo `step_sequence`. Nếu BA muốn app báo lỗi khi file xếp sai thứ tự, ghi vào đây. | |
 | E10 (Q6) | File cũ còn trường `pauseTimeMs` vẫn chạy được, vì app bỏ qua trường này. File còn dùng `targetButtonId` sẽ báo lỗi, kèm gợi ý đổi tên. | |
 
 ## F. Thay đổi ngày 2026-10-01
@@ -264,7 +264,7 @@ Yêu cầu: (1) video tua chậm phải mượt, không khựng; (2) bỏ dialog
 | F4 | Nguyên nhân giật: video 30 fps chạy 0.25× chỉ còn 7,5 khung/giây. Cách sửa: nội suy khung hình bằng ffmpeg `minterpolate`, chỉ ở các đoạn chạy chậm. Video gốc lưu ở `demo-sources/`. | Chọn ffmpeg thay vì AI (RIFE). Cảnh camera lia nhanh có thể hơi méo. Chỉ xử lý `spiderman`. |
 | F5 | Video giảm tốc dần từ 1× xuống `playbackSpeed` trong 0,3 giây, không đổi tốc độ đột ngột. Mốc dừng không đổi. | Thời gian chạy chậm thực tế ngắn hơn. Trên Galaxy A16, `slowDurationMs` 2000 ở 0.25× còn khoảng 1,25 giây. |
 
-Định dạng JSON chính thức cho BA: [docs/demo-script-format.md](docs/demo-script-format.md).
+Định dạng JSON chính thức cho BA: [tools/demo-script-format.md](tools/demo-script-format.md).
 
 ## G. Tính điểm khi bấm nút (2026-10-01)
 

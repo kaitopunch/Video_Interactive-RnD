@@ -1,85 +1,161 @@
-**YÊU CẦU PHÁT TRIỂN TÍNH NĂNG DEMO – INTERACTIVE VIDEO GAMEPLAY**
+# PS Remote — Demo Interactive Video Gameplay
 
-**1. Mục tiêu**
+App Android cho user thử các nút điều khiển trên màn hình bằng video gameplay quay sẵn, không cần kết nối máy
+PlayStation. Video phát theo một kịch bản JSON. Tới mốc trong kịch bản, màn hình tối đi, các nút cần bấm sáng lên,
+video chạy chậm dần rồi dừng chờ cho tới khi user bấm đúng.
 
-Xây dựng chế độ Demo cho phép user trải nghiệm các nút điều khiển trên màn hình thông qua video gameplay quay sẵn, không cần kết nối máy chơi game.
+**Trạng thái (2026-10-06):** bản `0.1.0`. Đã triển khai yêu cầu gốc ([`requirements.md`](requirements.md)) theo các
+quyết định trong [`confirm.md`](confirm.md). Đã test trên JVM, Robolectric và Galaxy A16 (SM-A165F). Danh sách game
+lấy từ catalogue của store, nên thêm hoặc sửa game không cần build lại app. Các điểm còn lệch nằm ở
+[Hạn chế đã biết](#hạn-chế-đã-biết).
 
-Video phát theo kịch bản cố định. Tại các mốc được cấu hình, hệ thống hiển thị tutorial, giảm tốc độ và dừng chờ user thực hiện đúng thao tác để tiếp tục.
+## Tính năng
 
-**2. Phạm vi triển khai**
+- **Home** liệt kê các game trên catalogue, sắp theo `priority`. Game có `status = false` bị ẩn. Khi lỗi mạng hoặc
+  danh sách rỗng, Home hiện nút Thử lại.
+- **Màn demo** phát video quay ngang, giữ đúng tỷ lệ, với tay cầm kiểu PlayStation phủ lên trên. Vùng sáng của
+  tutorial trùng với vùng nhận chạm của nút trên mọi kích thước màn hình. Màn hình không có chữ hướng dẫn: nút sáng
+  lên chính là hướng dẫn, và được đánh số 1, 2, 3 khi phải bấm theo thứ tự.
+- **Ba chế độ bấm** (`inputMode`):
+  - `SEQUENCE`: bấm lần lượt.
+  - `SIMULTANEOUS`: chạm cùng lúc, tối đa 5 nút.
+  - `ANY_ORDER`: bấm đủ các nút, thứ tự bất kỳ.
+- **Chạy chậm và dừng chờ:** video giảm dần về `playbackSpeed` trong 0,3 giây, rồi dừng ở
+  `triggerTimeMs + playbackSpeed × slowDurationMs`. Mốc dừng tính theo vị trí trên video, nên thời gian buffering
+  hay lúc app xuống nền không bị trừ vào thời gian chạy chậm.
+- **Điểm:** một bước được 100 điểm nếu bấm xong khi video còn chạy, 50 điểm nếu video đã dừng chờ. Tổng điểm hiện
+  ở góc trên bên phải và ở màn Hoàn thành. Thoát demo thì điểm không được lưu.
+- **Kịch bản sai:** khi mở game, app hiện màn liệt kê từng lỗi. Câu báo lỗi giống hệt câu mà công cụ `check` của
+  BA in ra.
+- Video phát trực tuyến và được cache trên máy, tối đa 256 MB. Giao diện có tiếng Anh và tiếng Việt. Quyền duy nhất
+  app cần là INTERNET.
 
-- Phát video gameplay theo chiều ngang.
-- Hiển thị bộ điều khiển và tutorial phía trên video.
-- Đọc kịch bản tương tác từ JSON riêng của từng demo.
-- Hỗ trợ một hoặc nhiều nút trong một bước, gồm:
-  - Bấm theo thứ tự.
-  - Nhấn giữ đồng thời.
-  - Bấm đủ nút, không yêu cầu thứ tự..
+## Build và chạy
 
-**3. Cấu trúc giao diện:
-[Link UI](https://www.figma.com/design/NeCET4LMwkS0tdWUAvsYtc/PS-Remote_UI?node-id=12167-8820&t=VmHNBZXLlKpirym8-4): [https://www.figma.com/design/NeCET4LMwkS0tdWUAvsYtc/PS-Remote_UI?node-id=12167-8820&t=VmHNBZXLlKpirym8-4\*\*](https://www.figma.com/design/NeCET4LMwkS0tdWUAvsYtc/PS-Remote_UI?node-id=12167-8820&t=VmHNBZXLlKpirym8-4</strong>)**
+Cần có:
 
-- ****Video Player:** Phát video nền, giữ đúng tỷ lệ hình ảnh.**
-- ****Controller Overlay:** Hiển thị các nút điều khiển và nhận input.**
-- ****Tutorial Overlay:** Làm tối nền, highlight nút mục tiêu và hiển thị hướng dẫn.**
+- Android SDK có API 37.
+- JDK 17 trở lên. Máy dev đang dùng JDK 24.
+- Một điện thoại Android 9 trở lên để chạy test trên máy thật.
 
-**Vùng highlight phải trùng với vùng nhận chạm của nút trên mọi kích thước màn hình được hỗ trợ. Với tổ hợp đồng thời, cần bảo đảm các nút có thể chạm cùng lúc mà không bị lớp tutorial chặn.**
+**1. Thêm API key của catalogue** vào `local.properties`. File này không có trong git.
 
-****4. Cấu hình JSON****
+```properties
+sdk.dir=/đường/dẫn/tới/Android/sdk
+CATALOGUE_API_KEY=<key>
+```
 
-**Thay trường `targetButtonId` bằng `targetButtonIds` để thống nhất cho cả bước một nút và nhiều nút. Sử dụng `slowDurationMs` để xác định thời lượng chạy chậm; không dùng đồng thời `pauseTimeMs`.**
+Có thể đặt biến môi trường `CATALOGUE_API_KEY` thay cho dòng trên. Nếu thiếu key, build vẫn thành công và Gradle in
+cảnh báo, nhưng server trả 404 nên Home báo không tải được danh sách.
 
-| Trường | Kiểu dữ liệu | Mô tả / Quy tắc |
+**2. Build và cài:**
+
+```bash
+./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Các lệnh khác:
+
+| Việc | Lệnh | Ghi chú |
 | --- | --- | --- |
-| `step_sequence` | Integer | Thứ tự xuất hiện của bước, bắt đầu từ `1`, tăng dần và không trùng trong cùng kịch bản. |
-| `triggerTimeMs` | Integer | Thời điểm hiển thị tutorial trên timeline video, đơn vị mili giây. Giá trị `> 0` và nhỏ hơn thời lượng video. |
-| `pauseTimeMs` | Integer | Thời điểm dừng video nếu user chưa hoàn thành thao tác, đơn vị mili giây trên timeline video. Giá trị `≥ triggerTimeMs`, nhỏ hơn thời lượng video và nằm trước cảnh hành động tương ứng. |
-| `targetButtonId` | Array of String | Danh sách ID các nút user cần bấm để hoàn thành bước, có ít nhất một phần tử. Ví dụ: `["DPAD_UP", "CROSS", "R1"]`. User bấm lần lượt theo thứ tự trong mảng; hoàn thành đủ chuỗi thì video tiếp tục. |
-| `playbackSpeed` | Number | Hệ số tốc độ phát khi tutorial xuất hiện. Giá trị `0 < playbackSpeed ≤ 1`; ví dụ `0.25` là một phần tư tốc độ bình thường. Riêng giá trị `0` quy định video dừng ngay và phải đi kèm `slowDurationMs = 0`. |
-| `slowDurationMs` | Integer | Thời gian thực tế video phát ở tốc độ `playbackSpeed` trước khi dừng chờ, đơn vị mili giây. Giá trị `> 0` khi chạy chậm; bằng `0` khi dừng ngay. Không tính thời gian buffering, mở menu hoặc app xuống nền. |
+| Test JVM và Robolectric | `./gradlew :app:testDebugUnitTest` | |
+| Test trên điện thoại | `./gradlew :app:connectedDebugAndroidTest --no-configuration-cache` | Phải có `--no-configuration-cache`: AGP 9.2.1 không lưu được input của task manifest androidTest vào configuration cache. Bộ này gồm `RemoteDemoRepositoryDeviceTest`, test kiểm tra mọi game trên catalogue thật. |
+| Bản release | `./gradlew :app:assembleRelease` | Chạy R8 và shrink resource. APK được ký bằng `keystore.properties`; thiếu file này thì APK ra không ký. Debug và release dùng key khác nhau, nên phải `adb uninstall com.pion.psremote` trước khi cài bản này đè lên bản kia. |
+| Benchmark | `./gradlew :benchmark:connectedBenchmarkAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.pion.psremote.benchmark.<Class>` | `<Class>` là `StartupBenchmark`, `OpenDemoBenchmark` hoặc `TutorialFrameBenchmark`. `BaselineProfileGenerator` tạo baseline profile. Điện thoại phải sáng màn hình, đã mở khoá và đang cắm sạc. |
+| Test công cụ của BA | `python3 -m unittest discover -s tools` | Cần Python 3.9+, chỉ dùng thư viện chuẩn. Các suite cần ffmpeg tự bỏ qua nếu máy không có ffmpeg. |
 
-****Ví dụ JSON:****
+## Thêm hoặc sửa một game
+
+Không cần build lại app, vì Home đọc catalogue mỗi lần mở app. Mỗi game là một mục trong category PS Remote trên
+CMS:
+
+| Trường trên CMS | Dùng để |
+| --- | --- |
+| `name` | Tên game hiện trên Home |
+| `priority` | Thứ tự trên Home, số nhỏ đứng trước |
+| `status` | `false` thì ẩn game khỏi Home |
+| `custom_fields.json` | Kịch bản: một mảng JSON các bước |
+| `custom_fields.source_vid` | Link video MP4 quay ngang |
+
+BA tự làm được cả quy trình bằng công cụ trong `tools/`. Công cụ cần Python 3.9+ và ffmpeg.
+
+1. Đặt video gốc và kịch bản vào cùng một thư mục, với tên `video.mp4` và `script.json`.
+2. Chạy `python3 tools/demo-assets.py check <thư-mục-game>`. Lệnh kiểm tra kịch bản theo đúng luật của app, dựa trên
+   độ dài thật của video, và không sửa file nào.
+3. Chạy `python3 tools/demo-assets.py build <thư-mục-game>`. Lệnh tạo `video-interpolated.mp4`, bản đã nội suy để các
+   đoạn chạy chậm không bị giật.
+4. Upload `video-interpolated.mp4` **lên một link mới**, rồi dán link vào `source_vid`. Nếu ghi đè file cũ ở link
+   cũ, điện thoại đã cache bản cũ sẽ tiếp tục phát bản cũ.
+5. Dán nội dung `script.json` vào `custom_fields.json`. Nội dung phải giống hệt file đã dùng để chạy `build`.
+6. Mở game trên điện thoại và chơi thử.
+
+Hướng dẫn chi tiết cho BA, gồm cả cách đọc kết quả, nằm trong [`tools/README.md`](tools/README.md).
+
+Đây là ba bước đầu của kịch bản `spiderman`:
+
+```json
+[
+  {"step_sequence": 1, "triggerTimeMs": 4500, "targetButtonIds": ["CROSS"], "inputMode": "SEQUENCE", "playbackSpeed": 0, "slowDurationMs": 0},
+  {"step_sequence": 2, "triggerTimeMs": 11000, "targetButtonIds": ["R2"], "inputMode": "SEQUENCE", "playbackSpeed": 0.25, "slowDurationMs": 2000},
+  {"step_sequence": 3, "triggerTimeMs": 24500, "targetButtonIds": ["L2", "R2"], "inputMode": "SIMULTANEOUS", "playbackSpeed": 0.25, "slowDurationMs": 2000}
+]
+```
+
+Bước 1 dừng ngay khi tutorial hiện. Bước 2 và 3 chạy chậm ở 0.25× trong 2 giây, rồi dừng chờ ở mốc
+`triggerTimeMs + 500`. ID của nút là tên hằng trong
+[`ControllerButton.kt`](app/src/main/kotlin/com/pion/psremote/domain/model/ControllerButton.kt), phân biệt chữ hoa và
+chữ thường. Luật đầy đủ của từng trường nằm trong [`tools/demo-script-format.md`](tools/demo-script-format.md).
+
+## Cấu trúc mã nguồn
 
 ```
-[{"step_sequence": 1,"triggerTimeMs": 34000,"pauseTimeMs": 34750,"targetButtonId": ["DPAD_UP", "CROSS", "R1"],"playbackSpeed": 0.25,"slowDurationMs": 3000},{"step_sequence": 2,"triggerTimeMs": 60000,"pauseTimeMs": 60000,"targetButtonId": ["CROSS"],"playbackSpeed": 0,"slowDurationMs": 0}]
+app/              ứng dụng: một module, các tầng là package trong com.pion.psremote
+  core/           MVI base, theme, design token, logger
+  domain/         model, đọc và kiểm tra kịch bản, xử lý thao tác bấm, tính điểm; Kotlin thuần, test trên JVM
+  data/           catalogue (OkHttp), phát video và cache (Media3)
+  feature/home/   màn chọn game
+  feature/demo/   màn demo: video, tay cầm, tutorial, điểm
+  di/             Koin graph
+  navigation/     NavHost và route
+benchmark/        Macrobenchmark và tạo baseline profile, chạy trên app đã cài
+tools/            công cụ asset cho BA: kiểm tra kịch bản, tạo video nội suy (Python và ffmpeg)
+demo-sources/     video gốc và kịch bản của từng game, không có trong git
 ```
 
-****5. Quy tắc kiểm tra cấu hình****
+Stack: Kotlin, Jetpack Compose, MVI, Koin, Navigation Compose, Media3 (ExoPlayer) và OkHttp. Phiên bản của từng thư
+viện nằm trong [`gradle/libs.versions.toml`](gradle/libs.versions.toml). SDK: minSdk 28, targetSdk 36, compileSdk 37.
+App chỉ chạy ở chế độ ngang.
 
-- **Các trường bắt buộc không được thiếu hoặc sai kiểu dữ liệu.**
-- **step_sequence vừa là thứ tự step vừa là ID và tồn tại duy nhất không được trùng**
-- **`triggerTimeMs ≥ 0`; các bước được sắp xếp tăng dần.**
-- **`slowDurationMs ≥ 0`; giá trị `0` nghĩa là hiện tutorial và dừng ngay.**
-- **Mốc dừng dự kiến:`stopPositionMs = triggerTimeMs + playbackSpeed × slowDurationMs`**
-- **Mốc dừng phải nằm trước cảnh hành động và trước khi video kết thúc.**
-- **Mốc kích hoạt bước sau phải lớn hơn mốc dừng của bước trước.**
-- **`targetButtonId` chỉ chứa ID được hỗ trợ và có trên giao diện.**
-- **Với tổ hợp đồng thời, Dev xác nhận số điểm chạm hỗ trợ trên nhóm thiết bị mục tiêu; cấu hình không được vượt giới hạn đã thống nhất.**
+Trước khi sửa code, hãy đọc `LLM.md` (file mới đặt ở đâu) và `docs/android-mvi-best-practices.md` (viết một màn MVI
+thế nào).
 
-****6. Luồng phát video****
+## Tài liệu
 
-- **Khi vào màn:Khi sẵn sàng → phát video từ đầu ở tốc độ `1.0`.**
-- **Khi đến `triggerTimeMs`:Kích hoạt tutorial một lần cho bước hiện tại.Set tốc độ theo `playbackSpeed`.Hiển thị hướng dẫnBắt đầu tính `slowDurationMs`.**
-- **Hết thời lượng nhưng user chưa hoàn thành:Pause video, giữ tutorial.Giữ các thao tác đã hoàn thành trong bước.Không tự bỏ qua hoặc tự kết thúc bước.**
-- **User hoàn thành trong lúc chạy chậm hoặc đang dừng:Đánh dấu bước hoàn thành một lần.Hủy tác vụ dừng chờ.Ẩn tutorial.Khôi phục tốc độ `1.0`, tiếp tục từ vị trí video hiện tại.Chuyển sang theo dõi bước kế tiếp.**
+| File | Nội dung | Có trong git |
+| --- | --- | --- |
+| [`requirements.md`](requirements.md) | Yêu cầu gốc của BA, giữ nguyên văn | Có |
+| [`confirm.md`](confirm.md) | Mọi quyết định đã chốt trên yêu cầu gốc, kể cả các thay đổi sau đó như tính điểm và lấy game từ API | Có |
+| [`demo-interactive-video-task-breakdown.md`](demo-interactive-video-task-breakdown.md) | Chia task và estimate ban đầu | Có |
+| [`tools/README.md`](tools/README.md) | Hướng dẫn công cụ asset, viết cho BA | Có |
+| [`tools/demo-script-format.md`](tools/demo-script-format.md) | Định dạng kịch bản JSON, viết cho BA | Có |
+| `LLM.md` | Bản đồ mã nguồn: ranh giới các tầng, package, chỗ đặt file mới, lệnh build, các điểm lệch đã biết (§11) | Không |
+| `docs/android-mvi-best-practices.md` | Cách viết một màn MVI, kèm checklist trước khi tạo PR | Không |
+| `docs/button-press-scoring-rules.md` | Luật tính điểm, viết cho dev | Không |
+| `AGENTS.md`, `.claude/` | Cấu hình cho AI agent | Không |
 
-**Ví dụ: Video đến giây 34 → chạy ở `0.25×` trong 3 giây thực tế → dừng tại khoảng giây 34,75 nếu user chưa hoàn thành.**
+Các file ghi "Không" nằm trong `.gitignore`, nên chỉ có trên máy dev.
 
-****7. Tiêu chí nghiệm thu****
+## Hạn chế đã biết
 
-- **Tutorial xuất hiện đúng mốc, đúng nút và đúng chế độ thao tác.**
-- **Một bước hỗ trợ được một nút và tổ hợp từ ba nút theo cấu hình, trong giới hạn thiết bị đã thống nhất.**
-- **Chuỗi có nút lặp yêu cầu các lần tap riêng.**
-- **Tổ hợp đồng thời chỉ hoàn thành khi tất cả nút mục tiêu đang được giữ cùng lúc.**
-- **Bấm sai, bấm sớm và bấm liên tục không bỏ qua bước.**
-- **Chưa hoàn thành tổ hợp → video dừng đúng điểm chờ.**
-- **Vùng chạm, highlight và bố cục hoạt động đúng**
+Danh sách đầy đủ nằm trong `LLM.md` §11. Các điểm cần xử lý trước khi phát hành:
 
-****8. Đề nghị team Dev phản hồi****
-
-- **Mức độ khả thi của tính năng**
-- **Estimate thời gian hoàn thành**
-- **Điều chỉnh cần thiết cho cấu trúc JSON.**
-- **Thời gian bàn giao bản thử nghiệm**
-
-**BA sẽ Cung cấp video và file json kịch bản**
+- Bố cục tay cầm đang theo tay cầm DualSense, chưa theo Figma, vì tài khoản đang dùng chưa có quyền xem file Figma
+  (§11 #1).
+- Bản release được ký bằng một keystore thử nghiệm. Mật khẩu của keystore này nằm ở dạng text trong
+  `keystore.properties`, và file đó có trong git. Không phát hành APK ký bằng key này: sau đó sẽ không cập nhật được
+  bằng key thật (§11 #3).
+- API key của catalogue được build vào APK, nên ai giải nén APK cũng đọc được. Điều này được chấp nhận vì endpoint là
+  public (confirm.md H5, §11 #12).
+- Kịch bản trên CMS không được kiểm tra lúc build app. Sau mỗi lần sửa CMS, cần chạy `RemoteDemoRepositoryDeviceTest`
+  trên điện thoại (§11 #13).

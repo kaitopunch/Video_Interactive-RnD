@@ -1,6 +1,6 @@
 # Chia sub-task: Demo Interactive Video Gameplay
 
-- **Yêu cầu gốc:** [README.md](README.md)
+- **Yêu cầu gốc:** [requirements.md](requirements.md) (tới 2026-10-06 là `README.md`)
 - **Các quyết định đã chốt:** [confirm.md](confirm.md) (các mã `Qn`, `Dn`, `En` bên dưới trỏ về file này)
 - **Bản đồ code:** [LLM.md](LLM.md)
 - **Ngày tạo:** 2026-09-29
@@ -40,7 +40,7 @@
 
 | # | Sub-task | Giờ |
 |---|---|---|
-| 1.1 | Đọc README, liệt kê chỗ spec tự mâu thuẫn (`targetButtonId`/`targetButtonIds`, `pauseTimeMs`/`slowDurationMs`, `> 0`/`≥ 0`, thiếu trường chế độ thao tác) | 2 |
+| 1.1 | Đọc yêu cầu gốc, liệt kê chỗ spec tự mâu thuẫn (`targetButtonId`/`targetButtonIds`, `pauseTimeMs`/`slowDurationMs`, `> 0`/`≥ 0`, thiếu trường chế độ thao tác) | 2 |
 | 1.2 | Soạn confirm.md: các câu hỏi A–D kèm đề xuất gửi BA | 3 |
 | 1.3 | Chốt danh sách 18 button ID (Q2) | 0.5 |
 | 1.4 | Chốt trường mới `inputMode` và 3 giá trị của nó (Q8) | 0.5 |
@@ -48,8 +48,8 @@
 | 1.6 | Chốt kiểu "click đồng thời" và giới hạn 5 điểm chạm (Q10, Q11) | 1 |
 | 1.7 | Chốt hành vi khi app xuống nền và dialog đếm ngược 5s (D6) | 0.5 |
 | 1.8 | Ghi mục E (cách hiểu khi triển khai) để BA soát lại | 1 |
-| 1.9 | Viết [docs/demo-script-format.md](docs/demo-script-format.md) cho BA | 2 |
-| 1.10 | Phản hồi README §8: mức khả thi, estimate, đề xuất sửa JSON, ngày bàn giao | 1 |
+| 1.9 | Viết [tools/demo-script-format.md](tools/demo-script-format.md) cho BA | 2 |
+| 1.10 | Phản hồi requirements.md §8: mức khả thi, estimate, đề xuất sửa JSON, ngày bàn giao | 1 |
 
 ## 2. Setup project và nền tảng (15h)
 
