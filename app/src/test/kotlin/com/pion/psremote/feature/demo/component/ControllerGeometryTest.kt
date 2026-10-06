@@ -17,7 +17,7 @@ import kotlin.math.abs
  * produces: a foldable's inner screen — where Android 16 ignores `sensorLandscape` once the display is 600 dp
  * wide — split-screen, a freeform window, and the odd tablet. On those the layout must stay *correct* (every
  * control inside, apart, round, its badge on its outline), because the spotlight hole is the touch area only as
- * long as no two touch areas overlap (README §3).
+ * long as no two touch areas overlap (requirements.md §3).
  */
 @RunWith(Parameterized::class)
 class ControllerGeometryTest(private val device: Device) {

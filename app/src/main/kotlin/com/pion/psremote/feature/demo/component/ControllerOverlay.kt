@@ -37,7 +37,7 @@ import com.pion.psremote.feature.demo.DemoIntent
 
 /**
  * The on-screen controller. Each button takes its own pointer, so any number of fingers can hold any
- * number of buttons at once — what a SIMULTANEOUS step needs (README §3).
+ * number of buttons at once — what a SIMULTANEOUS step needs (requirements.md §3).
  */
 @Composable
 fun ControllerOverlay(
@@ -61,7 +61,7 @@ fun ControllerOverlay(
 
 /**
  * Compose stretches the touch area of anything smaller than 48 dp to 48 dp — an accessibility default that, here,
- * makes a button take touches outside the shape the spotlight cuts (README §3). CREATE, OPTIONS, the shoulder
+ * makes a button take touches outside the shape the spotlight cuts (requirements.md §3). CREATE, OPTIONS, the shoulder
  * buttons and PS are under 48 dp on a 384 dp-tall phone, and every button is on a smaller one, so a touch in a
  * round button's corner, or just beside a pill, pressed it (F6). The controller's buttons are big by design and
  * their spacing is measured; the Exit button, outside this overlay, keeps the default.
@@ -99,7 +99,7 @@ private fun ControllerButtonView(
                     awaitFirstDown(requireUnconsumed = false).consume()
                     // A touch that lands on a blocked button is swallowed whole: no press effect, no
                     // intent — and it stays swallowed even if the button becomes live mid-touch, so a
-                    // finger already down when a tutorial appears does not count (README §7 "bấm sớm").
+                    // finger already down when a tutorial appears does not count (requirements.md §7 "bấm sớm").
                     if (!isEnabled) {
                         consumeUntilAllUp()
                         return@awaitEachGesture

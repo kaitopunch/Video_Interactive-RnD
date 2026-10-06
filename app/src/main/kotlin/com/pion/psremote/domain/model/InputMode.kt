@@ -3,8 +3,8 @@ package com.pion.psremote.domain.model
 /**
  * How the buttons of one step must be pressed — the `inputMode` field (confirm.md Q8).
  *
- * The README requires three modes but its JSON had no field to tell them apart; this is that field.
- * A step without it is [SEQUENCE], which is what every step in the README's example means.
+ * requirements.md requires three modes but its JSON had no field to tell them apart; this is that field.
+ * A step without it is [SEQUENCE], which is what every step in the example in requirements.md means.
  */
 enum class InputMode {
     /** Press the buttons one at a time, in array order. A repeated id needs a release and a new press. */

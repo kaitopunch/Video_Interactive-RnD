@@ -138,7 +138,10 @@ class ControllerOverlayTouchTest {
         assertEquals(emptyList<DemoIntent>(), intents)
     }
 
-    /** README §7 "bấm sớm": a finger already down when the button goes live counts for nothing until it lifts. */
+    /**
+     * requirements.md §7 "bấm sớm": a finger already down when the button goes live counts for nothing until it
+     * lifts.
+     */
     @Test
     fun aBlockedButtonSwallowsTheTouchEvenWhenItGoesLiveUnderTheFinger() {
         enabled = ControllerButton.entries.toSet() - CROSS

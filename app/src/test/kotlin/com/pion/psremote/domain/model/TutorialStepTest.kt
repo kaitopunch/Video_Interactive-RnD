@@ -7,7 +7,7 @@ import org.junit.Test
 
 class TutorialStepTest {
     @Test
-    fun `README example stops after 750 milliseconds of video`() {
+    fun `requirements example stops after 750 milliseconds of video`() {
         val step = step(speed = 0.25, slowDurationMs = 3_000)
 
         assertEquals(34_750L, step.stopPositionMs)

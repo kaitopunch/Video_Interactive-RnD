@@ -11,10 +11,10 @@ import com.pion.psremote.domain.model.TutorialStep
  * A press is counted on touch-down (D4). Only [activeButtons] can make progress, and the screen lets
  * nothing else be pressed while a tutorial is up (confirm.md Q9, D2) — so a wrong press never needs
  * undoing: it is ignored here as a second line of defence, and progress never goes backwards.
- * Progress is also kept when the video stops at the stop point (README §6).
+ * Progress is also kept when the video stops at the stop point (requirements.md §6).
  *
  * A fresh value is started when the step's tutorial appears, so a button already held down before
- * that moment counts for nothing until it is released and pressed again (README §7 "bấm sớm").
+ * that moment counts for nothing until it is released and pressed again (requirements.md §7 "bấm sớm").
  */
 data class StepProgress(
     val targets: List<ControllerButton>,

@@ -8,7 +8,7 @@ import org.junit.Test
 class InputModeTest {
 
     @Test
-    fun `a step without a mode is a sequence, as every step in the README's example means`() {
+    fun `a step without a mode is a sequence, as every step in the requirements example means`() {
         assertEquals(InputMode.SEQUENCE, InputMode.DEFAULT)
     }
 

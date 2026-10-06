@@ -113,7 +113,7 @@ class Media3VideoPlaybackDeviceTest {
         assertEquals(1f, playback.player.volume)
     }
 
-    /** README §4: the slow phase is video time, so at 0.5× one second of video takes two seconds. */
+    /** requirements.md §4: the slow phase is video time, so at 0.5× one second of video takes two seconds. */
     @Test
     fun aCueAtHalfSpeedTakesTwiceAsLongInRealTime() = onMain {
         playback.setSpeed(0.5f)

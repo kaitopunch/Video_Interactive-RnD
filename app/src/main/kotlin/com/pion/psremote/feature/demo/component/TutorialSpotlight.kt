@@ -31,7 +31,7 @@ import com.pion.psremote.feature.demo.ButtonHighlight
  * a SEQUENCE button whose turn has not come under a lighter dim with a faint, still ring.
  *
  * Each hole is cut from the same [ButtonGeometry] the button is placed with, so the lit area is the
- * touch area exactly (README §3). This layer draws only: it has no pointer input, so a touch in a hole
+ * touch area exactly (requirements.md §3). This layer draws only: it has no pointer input, so a touch in a hole
  * reaches the button beneath it. What makes the dimmed buttons unpressable is their `enabled` flag,
  * not this layer (confirm.md D2).
  *

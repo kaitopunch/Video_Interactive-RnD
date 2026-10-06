@@ -18,7 +18,7 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Runs one demo through its script (README §6). Stops are position-based via [VideoPlayback.scheduleCue] —
+ * Runs one demo through its script (requirements.md §6). Stops are position-based via [VideoPlayback.scheduleCue] —
  * the resume countdown and the slow-motion ramp are the only timers, and neither stops anything — so
  * buffering and background time never eat a slow phase. What counts as a correct press is [StepProgress]'s.
  */
@@ -115,7 +115,7 @@ class DemoViewModel(
             val step = steps.getOrNull(nextStepIndex)
             if (step != null && positionMs == step.triggerTimeMs) showTutorial(step)
         } else if (!tutorial.isWaiting && positionMs == tutorial.step.stopPositionMs) {
-            // Slow phase over, input not complete: stop and keep what was already done (README §6).
+            // Slow phase over, input not complete: stop and keep what was already done (requirements.md §6).
             setState { copy(tutorial = tutorial.copy(isWaiting = true)) }
             syncPlayback()
         }
@@ -149,8 +149,8 @@ class DemoViewModel(
     }
 
     /**
-     * README §6: done once, pending stop cancelled, tutorial hidden, 1.0× from the current position. Scored in the
-     * same update that hides the tutorial, so no frame shows the step gone and its points missing (scoring rules R1).
+     * requirements.md §6: done once, pending stop cancelled, tutorial hidden, 1.0× from the current position. Scored in
+     * the same update that hides the tutorial, so no frame shows the step gone and its points missing (scoring rules R1).
      */
     private fun completeStep(tutorial: ActiveTutorial) {
         playback.cancelCue()

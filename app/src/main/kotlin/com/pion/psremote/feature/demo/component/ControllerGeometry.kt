@@ -47,8 +47,8 @@ const val ROUNDED_CORNER_PERCENT = 28
  * Where every control sits, as a pure function of the screen size, in px.
  *
  * The button layer, the tutorial's dim layer and its badges all read the same [ControllerLayout], so a
- * highlight cut-out *is* the touch area, pixel for pixel, on every screen size (README §3). Bounds are rounded to
- * whole pixels here, once, so neither layer rounds differently from the other.
+ * highlight cut-out *is* the touch area, pixel for pixel, on every screen size (requirements.md §3). Bounds are rounded
+ * to whole pixels here, once, so neither layer rounds differently from the other.
  *
  * Positions are in units of 1 % of the usable height, anchored to the left edge, the centre or the right
  * edge. Anchoring to the edges rather than spreading by width keeps both clusters under the thumbs on a
@@ -71,7 +71,7 @@ object ControllerGeometry {
      * in landscape, 16:9 and up — gets 1 % of its height per unit, from its top edge, exactly as it always has.
      * A narrower one (a foldable's inner screen, split screen) gets the same block scaled down to fit the width and
      * centred vertically: scaled by height there, CREATE and OPTIONS would land on L2 and R2, and two overlapping
-     * touch areas break "the lit hole is the touch area" (README §3).
+     * touch areas break "the lit hole is the touch area" (requirements.md §3).
      */
     private class Frame(width: Float, height: Float, insets: EdgeInsets) {
         val left = insets.left

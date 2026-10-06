@@ -5,7 +5,7 @@ import com.pion.psremote.domain.model.ScriptViolation
 import com.pion.psremote.domain.model.TutorialStep
 
 /**
- * The value rules of README §5, plus the limits agreed in confirm.md. Pure: JVM-testable with no fakes.
+ * The value rules of requirements.md §5, plus the limits agreed in confirm.md. Pure: JVM-testable with no fakes.
  *
  * One rule of §5 is deliberately not here: "the stop point is before the action scene". The app cannot
  * see what a frame shows, so that one is the BA's to guarantee (D9).
@@ -16,7 +16,7 @@ object DemoScriptValidator {
     const val MAX_SIMULTANEOUS_BUTTONS = 5
 
     /**
-     * Slowest speed a slow phase may use. README allows anything above 0, but the platform audio path
+     * Slowest speed a slow phase may use. requirements.md allows anything above 0, but the platform audio path
      * (`AudioTrack` playback params) is only reliable from 0.1×: below that a device may reject the speed
      * and keep the previous one, so the "slow" phase runs fast and stops early.
      */

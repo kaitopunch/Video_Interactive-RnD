@@ -6,7 +6,7 @@ import kotlin.math.roundToLong
  * One interactive step of a demo script, after parsing. May still break a rule: only a script that
  * `DemoScriptValidator` accepted is ever played.
  *
- * `pauseTimeMs` from the README draft is not here on purpose (confirm.md Q6): it duplicated what
+ * `pauseTimeMs` from the requirements.md draft is not here on purpose (confirm.md Q6): it duplicated what
  * [stopPositionMs] computes, and two fields that can disagree will disagree.
  */
 data class TutorialStep(
@@ -23,8 +23,8 @@ data class TutorialStep(
 ) {
     /**
      * Where the video stops if the user has not finished: `triggerTimeMs + playbackSpeed × slowDurationMs`
-     * (README §5). The pause is scheduled at this *video position*, not after a wall-clock delay, which is
-     * what keeps buffering and time spent in the background out of `slowDurationMs` (README §4, D5).
+     * (requirements.md §5). The pause is scheduled at this *video position*, not after a wall-clock delay, which is
+     * what keeps buffering and time spent in the background out of `slowDurationMs` (requirements.md §4, D5).
      */
     val stopPositionMs: Long
         // Summed as a Double: `roundToLong` saturates, where a Long sum of two huge values wraps negative

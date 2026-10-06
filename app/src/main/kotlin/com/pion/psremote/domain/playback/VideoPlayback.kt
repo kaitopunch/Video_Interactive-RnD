@@ -32,7 +32,7 @@ interface VideoPlayback {
      * cue can never be skipped by a pause that overshot it by a frame.
      *
      * Position, not a timer: time spent buffering, paused or in the background does not move the
-     * position, so it cannot use up a step's slow phase (README §4).
+     * position, so it cannot use up a step's slow phase (requirements.md §4).
      */
     fun scheduleCue(positionMs: Long)
 

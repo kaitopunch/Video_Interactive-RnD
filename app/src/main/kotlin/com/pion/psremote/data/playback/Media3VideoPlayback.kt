@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
  *
  * Cues are [PlayerMessage]s pinned to a video position. The player delivers one when *playback* reaches
  * that position, which is what makes a step's slow phase immune to buffering and to time spent in the
- * background (README §4, D5). Delivery is on the main looper, the same thread the ViewModel runs on.
+ * background (requirements.md §4, D5). Delivery is on the main looper, the same thread the ViewModel runs on.
  */
 @OptIn(UnstableApi::class)
 class Media3VideoPlayback(context: Context, cache: VideoCache) : VideoPlayback {
